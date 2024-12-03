@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'attendance.dart'; // Ensure this import points to the correct location of your AttendanceScreen
+import 'attendance.dart';
+import 'notifications_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,6 +19,46 @@ class _HomePageState extends State<HomePage> {
           style: TextStyle(fontWeight: FontWeight.w500),
         ),
         centerTitle: true,
+        actions: [
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationsPage(),
+                    ),
+                  );
+                },
+              ),
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 14,
+                    minHeight: 14,
+                  ),
+                  child: const Text(
+                    '2',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -29,7 +70,7 @@ class _HomePageState extends State<HomePage> {
             _buildCard(
                 context, 'Profile', Icons.person_4_outlined, Colors.white, '/profilepage'),
             _buildCard(
-                context, 'Salary', Icons.attach_money, Colors.white, '/salarypage'),
+                context, 'Attendance List', Icons.checklist_outlined, Colors.white, '/attendancelistpage'),
             _buildCard(
                 context, 'Attendance', Icons.done_outline, Colors.white, null),
             _buildCard(

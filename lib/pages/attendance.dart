@@ -1,6 +1,8 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../services/face_recognition_service.dart';
+import 'dart:convert';
 
 class AttendanceScreen extends StatefulWidget {
   @override
@@ -19,11 +21,15 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
   bool isLoading = false;
   bool? isVerified;
+  bool isCheckedIn = false;
+  String? activeWorkEntryId;
+  final _storage = FlutterSecureStorage();
 
   @override
   void initState() {
     super.initState();
     initializeCamera();
+    _loadAttendanceStatus();
   }
 
   Future<void> initializeCamera() async {
@@ -42,6 +48,65 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     } catch (e) {
       print("Error initializing camera: $e");
     }
+  }
+
+  Future<void> _loadAttendanceStatus() async {
+    final status = await _storage.read(key: 'attendance_status');
+    final entryId = await _storage.read(key: 'active_work_entry');
+    setState(() {
+      isCheckedIn = status == 'checked_in';
+      activeWorkEntryId = entryId;
+    });
+  }
+
+  Future<void> _saveAttendanceStatus(bool isCheckedIn) async {
+    await _storage.write(
+      key: 'attendance_status',
+      value: isCheckedIn ? 'checked_in' : 'checked_out',
+    );
+    setState(() {
+      this.isCheckedIn = isCheckedIn;
+    });
+  }
+
+  Future<void> _createWorkEntry() async {
+    final now = DateTime.now();
+    final newEntry = {
+      'id': now.millisecondsSinceEpoch.toString(),
+      'checkIn': now.toIso8601String(),
+      'checkOut': null,
+    };
+
+    // Load existing entries
+    final entriesJson = await _storage.read(key: 'work_entries') ?? '[]';
+    final List<dynamic> entries = json.decode(entriesJson);
+    entries.add(newEntry);
+
+    // Save updated entries
+    await _storage.write(key: 'work_entries', value: json.encode(entries));
+    await _storage.write(key: 'active_work_entry', value: newEntry['id']);
+    activeWorkEntryId = newEntry['id'];
+  }
+
+  Future<void> _completeWorkEntry() async {
+    if (activeWorkEntryId == null) return;
+
+    // Load existing entries
+    final entriesJson = await _storage.read(key: 'work_entries') ?? '[]';
+    final List<dynamic> entries = json.decode(entriesJson);
+
+    // Find and update the active entry
+    for (var i = 0; i < entries.length; i++) {
+      if (entries[i]['id'] == activeWorkEntryId) {
+        entries[i]['checkOut'] = DateTime.now().toIso8601String();
+        break;
+      }
+    }
+
+    // Save updated entries
+    await _storage.write(key: 'work_entries', value: json.encode(entries));
+    await _storage.delete(key: 'active_work_entry');
+    activeWorkEntryId = null;
   }
 
   Future<void> captureImage() async {
@@ -63,10 +128,22 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         });
 
         if (verificationResult) {
-          print("Face recognized. Check-in successful.");
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text("Check-in successful!")));
-          Navigator.pop(context, true); // Return true to parent page
+          if (!isCheckedIn) {
+            // Handling check-in
+            await _createWorkEntry();
+            await _saveAttendanceStatus(true);
+            print("Face recognized. Check-in successful.");
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text("Check-in successful!")));
+          } else {
+            // Handling check-out
+            await _completeWorkEntry();
+            await _saveAttendanceStatus(false);
+            print("Face recognized. Check-out successful.");
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text("Check-out successful!")));
+          }
+          Navigator.pop(context, true);
         } else {
           print("Face not recognized.");
           ScaffoldMessenger.of(context)
@@ -92,6 +169,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     controller?.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

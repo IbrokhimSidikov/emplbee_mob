@@ -1,7 +1,7 @@
 import 'package:emplbee_mob/pages/home_page.dart';
 import 'package:emplbee_mob/pages/onboard_page.dart';
 import 'package:emplbee_mob/pages/profile_page.dart';
-import 'package:emplbee_mob/pages/salary_page.dart';
+import 'package:emplbee_mob/pages/attendance_list_page.dart';
 import 'package:emplbee_mob/pages/tasks.dart';
 import 'package:emplbee_mob/widget/camera_widget.dart';
 import 'package:flutter/material.dart';
@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
         '/homepage': (context) => HomePage(),
         '/profilepage': (context) => ProfilePage(),
         '/attendancepage': (context) => AttendanceScreen(),
-        '/salarypage': (context) => SalaryPage(),
+        '/attendancelistpage': (context) => AttendanceListPage(),
         '/taskspage': (context) => TasksPage(),
         '/signinpage': (context) => SignIn(),
       },
