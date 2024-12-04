@@ -129,14 +129,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
         if (verificationResult) {
           if (!isCheckedIn) {
-            // Handling check-in
             await _createWorkEntry();
             await _saveAttendanceStatus(true);
             print("Face recognized. Check-in successful.");
             ScaffoldMessenger.of(context)
                 .showSnackBar(SnackBar(content: Text("Check-in successful!")));
           } else {
-            // Handling check-out
             await _completeWorkEntry();
             await _saveAttendanceStatus(false);
             print("Face recognized. Check-out successful.");
@@ -179,10 +177,26 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       ),
       body: Stack(
         children: [
-          isCameraInitialized
-              ? CameraPreview(controller!)
-              : Center(child: CircularProgressIndicator()),
-          if (isLoading) Center(child: CircularProgressIndicator()),
+          if (isCameraInitialized)
+            Stack(
+              children: [
+                CameraPreview(controller!),
+                CustomPaint(
+                  painter: FaceOverlayPainter(),
+                  child: Container(
+                    width: MediaQuery.of(context).size.width,
+                    height: MediaQuery.of(context).size.height,
+                  ),
+                ),
+              ],
+            )
+          else
+            Center(child: CircularProgressIndicator()),
+          if (isLoading) 
+            Container(
+              color: Colors.black54,
+              child: Center(child: CircularProgressIndicator()),
+            ),
           if (isVerified != null && !isLoading)
             Center(
               child: Icon(
@@ -199,4 +213,83 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       ),
     );
   }
+}
+
+class FaceOverlayPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Draw dark overlay for the entire screen
+    final backgroundPaint = Paint()
+      ..color = Colors.black.withOpacity(0.5)
+      ..style = PaintingStyle.fill;
+
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      backgroundPaint,
+    );
+
+    // Calculate face oval dimensions
+    final double ovalWidth = size.width * 0.65;
+    final double ovalHeight = size.height * 0.45;
+    final double centerX = size.width / 2;
+    final double centerY = size.height * 0.4;
+
+    // Create oval path for the face outline
+    final ovalRect = Rect.fromCenter(
+      center: Offset(centerX, centerY),
+      width: ovalWidth,
+      height: ovalHeight,
+    );
+    final ovalPath = Path()..addOval(ovalRect);
+
+    // Cut out the oval from the dark overlay
+    canvas.drawPath(
+      ovalPath,
+      Paint()
+        ..color = Colors.transparent
+        ..style = PaintingStyle.fill
+        ..blendMode = BlendMode.clear,
+    );
+
+    // Draw the bright outline
+    final outlinePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0;
+
+    // Add glow effect
+    outlinePaint.maskFilter = MaskFilter.blur(BlurStyle.outer, 3);
+    
+    canvas.drawPath(ovalPath, outlinePaint);
+
+    // Add guiding text
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: 'Position your face within the outline',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          shadows: [
+            Shadow(
+              blurRadius: 4,
+              color: Colors.black,
+              offset: Offset(1, 1),
+            ),
+          ],
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(
+        (size.width - textPainter.width) / 2,
+        centerY + ovalHeight / 2 + 20,
+      ),
+    );
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

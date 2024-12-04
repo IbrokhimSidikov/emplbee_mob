@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'dart:convert';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -12,8 +13,9 @@ class _ProfilePageState extends State<ProfilePage> {
   final String employeeName = "Ibrokhim Sidikov";
   final String position = "Software Engineer";
   final String email = "ibrokhim.sidikov@emplbee.com";
-  final int workedHours = 160;
+  double totalWorkedHours = 0;
   final double salary = 15000000;
+  final int workedHours = 160;
   final int availableOffDays = 15;
   String? profileImageUrl;
   bool isOnline = false;
@@ -25,6 +27,7 @@ class _ProfilePageState extends State<ProfilePage> {
     // TODO: Load profile image URL from your data source
     // For example: profileImageUrl = await getUserProfileImage();
     _loadAttendanceStatus();
+    _calculateTotalHours();
   }
 
   Future<void> _loadAttendanceStatus() async {
@@ -32,6 +35,28 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() {
       isOnline = status == 'checked_in';
     });
+  }
+
+  Future<void> _calculateTotalHours() async {
+    final entriesJson = await _storage.read(key: 'work_entries');
+    if (entriesJson != null) {
+      final List<dynamic> entries = json.decode(entriesJson);
+      double total = 0;
+      
+      for (var entry in entries) {
+        final checkIn = DateTime.parse(entry['checkIn']);
+        final checkOut = entry['checkOut'] != null ? DateTime.parse(entry['checkOut']) : null;
+        
+        if (checkOut != null) {
+          final duration = checkOut.difference(checkIn);
+          total += duration.inMinutes / 60;
+        }
+      }
+      
+      setState(() {
+        totalWorkedHours = double.parse(total.toStringAsFixed(1));
+      });
+    }
   }
 
   Widget _buildInfoCard({
@@ -183,7 +208,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
                       _buildInfoCard(
                         title: 'Worked Hours',
-                        value: '$workedHours hrs',
+                        value: '$totalWorkedHours hrs',
                         icon: Icons.access_time,
                       ),
                       _buildInfoCard(
