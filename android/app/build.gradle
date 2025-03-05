@@ -49,6 +49,10 @@ android {
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        manifestPlaceholders += [
+            'auth0Domain': 'emplbee.uk.auth0.com',
+            'auth0Scheme': 'com.emplbee.app'
+        ]
     }
 
     buildTypes {

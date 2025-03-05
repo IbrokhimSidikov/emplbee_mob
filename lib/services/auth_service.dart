@@ -15,9 +15,11 @@ class AuthService {
 
   final String clientId = 'XdNYrYSqdeGXenQPeMJhwfyu1J0pD1MA';
   final String domain = 'emplbee.uk.auth0.com';
-  final String androidCallbackUri = 'https://emplbee.uk.auth0.com/android/APPEMPLBEE/callback';
-  final String iosCallbackUri = 'https://emplbee.uk.auth0.com/ios/com.emplbee.app/callback';
-  final String callbackScheme = 'https';
+  final String androidCallbackUri =
+      'https://emplbee.uk.auth0.com/android/APPEMPLBEE/callback';
+  final String iosCallbackUri =
+      'https://emplbee.uk.auth0.com/ios/com.emplbee.app/callback';
+  final String callbackScheme = 'com.emplbee.app';
   final storage = FlutterSecureStorage();
 
   Future<void> login() async {
@@ -42,10 +44,10 @@ class AuthService {
 
       final tokenUrl = 'https://$domain/oauth/token';
       final body = {
-          'grant_type': 'authorization_code',
-          'client_id': clientId,
-          'code': code,
-          'redirect_uri': callbackUri(),
+        'grant_type': 'authorization_code',
+        'client_id': clientId,
+        'code': code,
+        'redirect_uri': callbackUri(),
       };
       print('Token request URL: $tokenUrl');
       print('Token request body: $body');
@@ -60,12 +62,14 @@ class AuthService {
       print('Token response body: ${response.body}');
 
       if (response.statusCode != 200) {
-        throw Exception('Token request failed with status: ${response.statusCode}, body: ${response.body}');
+        throw Exception(
+            'Token request failed with status: ${response.statusCode}, body: ${response.body}');
       }
 
       final responseBody = jsonDecode(response.body);
       if (responseBody['access_token'] != null) {
-        await storage.write(key: 'access_token', value: responseBody['access_token']);
+        await storage.write(
+            key: 'access_token', value: responseBody['access_token']);
         print('Access token stored successfully');
       } else {
         print('No access token in response');
