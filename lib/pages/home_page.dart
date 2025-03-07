@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'attendance.dart';
 import 'notifications_page.dart';
 
@@ -9,127 +11,280 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeIn,
+    ));
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _navigateToAttendance(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AttendanceScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Home Page',
-          style: TextStyle(fontWeight: FontWeight.w500),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.blue.shade50,
+              Colors.white,
+              Colors.blue.shade50,
+            ],
+          ),
         ),
-        centerTitle: true,
-        actions: [
-          Stack(
+        child: SafeArea(
+          child: Stack(
             children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const NotificationsPage(),
-                    ),
-                  );
-                },
-              ),
+              // Background design elements
               Positioned(
-                right: 8,
-                top: 8,
+                right: -50,
+                top: -50,
                 child: Container(
-                  padding: const EdgeInsets.all(2),
+                  width: 150,
+                  height: 150,
                   decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 14,
-                    minHeight: 14,
-                  ),
-                  child: const Text(
-                    '2',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 8,
-                    ),
-                    textAlign: TextAlign.center,
+                    shape: BoxShape.circle,
+                    color: Colors.blue.withOpacity(0.1),
                   ),
                 ),
               ),
+              Positioned(
+                left: -30,
+                bottom: -30,
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.blue.withOpacity(0.1),
+                  ),
+                ),
+              ),
+
+              // Main content
+              Column(
+                children: [
+                  // Custom App Bar
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Logo and Title
+                        Row(
+                          children: [
+                            Hero(
+                              tag: 'logo',
+                              child: SvgPicture.asset(
+                                'images/QoraAriKotta.svg',
+                                width: 40,
+                                height: 40,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Emplbee',
+                              style: GoogleFonts.poppins(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Notification Icon
+                        Stack(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.notifications_outlined,
+                                  size: 28),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const NotificationsPage(),
+                                  ),
+                                );
+                              },
+                            ),
+                            Positioned(
+                              right: 8,
+                              top: 8,
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 14,
+                                  minHeight: 14,
+                                ),
+                                child: const Text(
+                                  '2',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Welcome Message
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Welcome back!',
+                            style: GoogleFonts.poppins(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            'What would you like to do today?',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Grid Menu
+                  Expanded(
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: GridView.count(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16.0,
+                          mainAxisSpacing: 16.0,
+                          children: [
+                            _buildCard(context, 'Profile',
+                                Icons.person_4_outlined, '/profilepage'),
+                            _buildCard(
+                                context,
+                                'Attendance List',
+                                Icons.checklist_outlined,
+                                '/attendancelistpage'),
+                            _buildCard(context, 'Attendance',
+                                Icons.done_outline, null),
+                            _buildCard(context, 'Tasks', Icons.task_outlined,
+                                '/taskspage'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: GridView.count(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16.0,
-          mainAxisSpacing: 16.0,
-          children: [
-            _buildCard(
-                context, 'Profile', Icons.person_4_outlined, Colors.white, '/profilepage'),
-            _buildCard(
-                context, 'Attendance List', Icons.checklist_outlined, Colors.white, '/attendancelistpage'),
-            _buildCard(
-                context, 'Attendance', Icons.done_outline, Colors.white, null),
-            _buildCard(
-                context, 'Tasks', Icons.task_outlined, Colors.white, '/taskspage'),
-          ],
         ),
       ),
     );
   }
 
-  Widget _buildCard(BuildContext context, String label, IconData icon, Color color, String? routeName) {
+  Widget _buildCard(
+      BuildContext context, String label, IconData icon, String? routeName) {
     return GestureDetector(
       onTap: () {
         if (routeName != null) {
-          Navigator.pushReplacementNamed(context, routeName);
+          Navigator.pushNamed(context, routeName);
         } else {
-          // Specific navigation for Attendance
           _navigateToAttendance(context);
         }
       },
-      child: Card(
-        color: Color(0xFF17284d),
-        elevation: 4.0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 48.0,
-              color: color,
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 32,
+                color: Colors.blue.shade700,
+              ),
             ),
-            SizedBox(height: 16.0),
+            const SizedBox(height: 12),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 16.0,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
       ),
     );
-  }
-
-  Future<void> _navigateToAttendance(BuildContext context) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => AttendanceScreen()),
-    );
-
-    if (result == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Check-in successful!")),
-      );
-    }
   }
 }

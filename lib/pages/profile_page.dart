@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 
 class ProfilePage extends StatefulWidget {
@@ -9,7 +10,11 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
+class _ProfilePageState extends State<ProfilePage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+
   final String employeeName = "Ibrokhim Sidikov";
   final String position = "Software Engineer";
   final String email = "ibrokhim.sidikov@emplbee.com";
@@ -24,10 +29,28 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    // TODO: Load profile image URL from your data source
-    // For example: profileImageUrl = await getUserProfileImage();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeIn,
+    ));
+
+    _controller.forward();
     _loadAttendanceStatus();
     _calculateTotalHours();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   Future<void> _loadAttendanceStatus() async {
@@ -42,17 +65,19 @@ class _ProfilePageState extends State<ProfilePage> {
     if (entriesJson != null) {
       final List<dynamic> entries = json.decode(entriesJson);
       double total = 0;
-      
+
       for (var entry in entries) {
         final checkIn = DateTime.parse(entry['checkIn']);
-        final checkOut = entry['checkOut'] != null ? DateTime.parse(entry['checkOut']) : null;
-        
+        final checkOut = entry['checkOut'] != null
+            ? DateTime.parse(entry['checkOut'])
+            : null;
+
         if (checkOut != null) {
           final duration = checkOut.difference(checkIn);
           total += duration.inMinutes / 60;
         }
       }
-      
+
       setState(() {
         totalWorkedHours = double.parse(total.toStringAsFixed(1));
       });
@@ -63,31 +88,55 @@ class _ProfilePageState extends State<ProfilePage> {
     required String title,
     required String value,
     required IconData icon,
-    Color? backgroundColor,
+    Color? iconColor,
+    bool isHighlighted = false,
   }) {
-    return Card(
-      elevation: 4,
-      color: backgroundColor ?? Colors.white,
+    return Container(
+      decoration: BoxDecoration(
+        color: isHighlighted ? Colors.blue.shade50 : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Icon(icon, size: 32, color: Colors.blue[700]),
-            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: (iconColor ?? Colors.blue).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 24,
+                color: iconColor ?? Colors.blue.shade700,
+              ),
+            ),
+            const SizedBox(height: 12),
             Text(
               title,
-              style: TextStyle(
+              style: GoogleFonts.poppins(
                 fontSize: 14,
                 color: Colors.grey[600],
               ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 20,
+              style: GoogleFonts.poppins(
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -98,143 +147,254 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text('Profile'),
-        centerTitle: true,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pushReplacementNamed(context, '/homepage');
-          },
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.blue.shade50,
+              Colors.white,
+              Colors.blue.shade50,
+            ],
+          ),
         ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue,
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
-                ),
-              ),
-              child: Column(
-                children: [
-                  Stack(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                // Custom App Bar
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.white,
-                        backgroundImage: profileImageUrl != null 
-                            ? NetworkImage(profileImageUrl!)
-                            : null,
-                        child: profileImageUrl == null
-                            ? const Icon(Icons.person, size: 50, color: Colors.blue)
-                            : null,
+                      IconButton(
+                        icon:
+                            const Icon(Icons.arrow_back, color: Colors.black87),
+                        onPressed: () => Navigator.pop(context),
                       ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          width: 20,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            color: isOnline ? Colors.green : Colors.grey,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 2,
-                            ),
-                          ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Profile',
+                        style: GoogleFonts.poppins(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
                         ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.black87),
+                        onPressed: () {
+                          // TODO: Implement edit profile
+                        },
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    employeeName,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                ),
+
+                // Profile Header
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 50,
+                              backgroundColor: Colors.blue.shade100,
+                              backgroundImage: profileImageUrl != null
+                                  ? NetworkImage(profileImageUrl!)
+                                  : null,
+                              child: profileImageUrl == null
+                                  ? Text(
+                                      employeeName
+                                          .split(' ')
+                                          .map((e) => e[0])
+                                          .join(),
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue.shade700,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: isOnline ? Colors.green : Colors.grey,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                                width: 20,
+                                height: 20,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          employeeName,
+                          style: GoogleFonts.poppins(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          position,
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          email,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    position,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.white70,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    email,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    alignment: Alignment.center,
-                    child: const Text(
-                      'This Month\'s Statistics',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  GridView.count(
+                ),
+
+                // Stats Grid
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     crossAxisCount: 2,
-                    crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
                     children: [
                       _buildInfoCard(
-                        title: 'Worked Hours',
+                        title: 'Total Hours',
                         value: '$totalWorkedHours hrs',
                         icon: Icons.access_time,
+                        iconColor: Colors.blue,
+                        isHighlighted: true,
                       ),
                       _buildInfoCard(
-                        title: 'Generated Salary',
-                        value: '$salary\n\UZS',
-                        icon: Icons.attach_money,
+                        title: 'Monthly Hours',
+                        value: '$workedHours hrs',
+                        icon: Icons.calendar_today,
+                        iconColor: Colors.purple,
                       ),
                       _buildInfoCard(
                         title: 'Available Off Days',
                         value: '$availableOffDays days',
-                        icon: Icons.event_available,
+                        icon: Icons.beach_access,
+                        iconColor: Colors.orange,
                       ),
                       _buildInfoCard(
-                        title: 'Performance',
-                        value: 'Excellent',
-                        icon: Icons.trending_up,
-                        backgroundColor: Colors.green[50],
+                        title: 'Monthly Salary',
+                        value: '\$${(salary / 1000000).toStringAsFixed(1)}M',
+                        icon: Icons.account_balance_wallet,
+                        iconColor: Colors.green,
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+
+                // Additional Info Section
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Quick Actions',
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            _buildActionTile(
+                              'Request Time Off',
+                              Icons.event_available,
+                              () {
+                                // TODO: Implement time off request
+                              },
+                            ),
+                            const Divider(height: 1),
+                            _buildActionTile(
+                              'View Attendance History',
+                              Icons.history,
+                              () {
+                                // TODO: Implement attendance history view
+                              },
+                            ),
+                            const Divider(height: 1),
+                            _buildActionTile(
+                              'Download Pay Slip',
+                              Icons.description,
+                              () {
+                                // TODO: Implement pay slip download
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildActionTile(String title, IconData icon, VoidCallback onTap) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.blue.shade50,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Colors.blue.shade700),
+      ),
+      title: Text(
+        title,
+        style: GoogleFonts.poppins(
+          fontSize: 16,
+          color: Colors.black87,
+        ),
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
     );
   }
 }

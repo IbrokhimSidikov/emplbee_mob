@@ -6,7 +6,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class UserService {
   static final UserService _instance = UserService._internal();
   final storage = const FlutterSecureStorage();
-  final String baseUrl = 'https://api.emplbee.com'; // Replace with your actual API URL
+  final String baseUrl =
+      'https://api.emplbee.com'; // Replace with your actual API URL
 
   factory UserService() {
     return _instance;
@@ -35,12 +36,12 @@ class UserService {
       return UserModel(
         id: '1',
         name: 'Ibrokhim Sidikov',
-        position: 'Software Engineer',
+        // position: 'Software Engineer',
         email: 'ibrokhim.sidikov@emplbee.com',
-        imageUrl: null, // Add your image URL here when available
-        workedHours: 160,
-        salary: 15000000,
-        availableOffDays: 15,
+        // imageUrl: null, // Add your image URL here when available
+        // workedHours: 160,
+        // salary: 15000000,
+        // availableOffDays: 15,
       );
     }
   }

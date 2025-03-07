@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "91193218059",
+    "project_id": "emplbeemobile",
+    "storage_bucket": "emplbeemobile.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:91193218059:android:d9ab0e23e85f11adbaa30e",
+        "android_client_info": {
+          "package_name": "com.emplbee.mobileAndroid"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBL_xDJrBWhYwUh65g2NbMDO465dkMdvoM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
