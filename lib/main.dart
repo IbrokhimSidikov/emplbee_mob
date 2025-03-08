@@ -3,49 +3,65 @@ import 'package:emplbee_mob/firebase_options.dart';
 import 'package:emplbee_mob/pages/home_page.dart';
 import 'package:emplbee_mob/pages/onboard_page.dart';
 import 'package:emplbee_mob/pages/profile_page.dart';
-import 'package:emplbee_mob/pages/attendance_list_page.dart';
 import 'package:emplbee_mob/pages/tasks.dart';
-import 'package:emplbee_mob/services/notification_service.dart';
-import 'package:emplbee_mob/widget/camera_widget.dart';
+import 'package:emplbee_mob/pages/attendance_list_page.dart';
+import 'package:emplbee_mob/pages/attendance.dart';
+import 'package:emplbee_mob/pages/notifications_page.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:emplbee_mob/pages/signin_page.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/app_localizations_delegate.dart';
+import 'providers/locale_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  // await FirebaseApi().initNotifications();
 
-  // Initialize notifications using NotificationService
-  await NotificationService().initialize();
-
-  runApp(MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => LocaleProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    final localeProvider = Provider.of<LocaleProvider>(context);
+
     return MaterialApp(
-      title: 'Flutter Demo',
       debugShowCheckedModeBanner: false,
+      title: 'Emplbee',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
+      locale: localeProvider.locale,
+      supportedLocales: const [Locale('en'), Locale('uz')],
+      localizationsDelegates: [
+        AppLocalizationsDelegate(),
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       initialRoute: '/',
       routes: {
-        '/': (context) => OnBoardPage(),
-        '/homepage': (context) => HomePage(),
-        '/profilepage': (context) => ProfilePage(),
+        '/': (context) => const OnBoardPage(),
+        '/login': (context) => const SignIn(),
+        '/homepage': (context) => const HomePage(),
+        '/profilepage': (context) => const ProfilePage(),
+        '/attendancelistpage': (context) => const AttendanceListPage(),
         '/attendancepage': (context) => AttendanceScreen(),
-        '/attendancelistpage': (context) => AttendanceListPage(),
-        '/taskspage': (context) => TasksPage(),
-        '/signinpage': (context) => SignIn(),
+        '/taskspage': (context) => const TasksPage(),
+        '/notificationspage': (context) => const NotificationsPage(),
       },
     );
   }

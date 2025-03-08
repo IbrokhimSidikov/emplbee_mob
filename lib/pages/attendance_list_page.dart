@@ -1,3 +1,4 @@
+import 'package:emplbee_mob/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -129,7 +130,9 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      entry.checkOut != null ? 'Completed' : 'In Progress',
+                      entry.checkOut != null
+                          ? AppLocalizations.of(context).completed
+                          : AppLocalizations.of(context).inProgress,
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         color: entry.checkOut != null
@@ -146,7 +149,7 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildTimeInfo(
-                    'Check In',
+                    AppLocalizations.of(context).checkIn,
                     DateFormat('HH:mm').format(entry.checkIn),
                     Icons.login,
                     Colors.green,
@@ -157,7 +160,7 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                     color: Colors.grey.shade200,
                   ),
                   _buildTimeInfo(
-                    'Check Out',
+                    AppLocalizations.of(context).checkOut,
                     entry.checkOut != null
                         ? DateFormat('HH:mm').format(entry.checkOut!)
                         : '-',
@@ -170,7 +173,7 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                     color: Colors.grey.shade200,
                   ),
                   _buildTimeInfo(
-                    'Duration',
+                    AppLocalizations.of(context).duration,
                     _formatDuration(entry.checkIn, entry.checkOut),
                     Icons.timer,
                     Colors.blue,
@@ -239,7 +242,7 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Attendance History',
+                      AppLocalizations.of(context).attendanceHistory,
                       style: GoogleFonts.poppins(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -257,7 +260,7 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                   children: [
                     Expanded(
                       child: _buildStatCard(
-                        'Total Hours',
+                        AppLocalizations.of(context).totalHours,
                         '${workEntries.fold<int>(0, (sum, entry) => sum + (entry.checkOut?.difference(entry.checkIn).inHours ?? 0))}h',
                         Icons.access_time,
                         Colors.blue,
@@ -266,7 +269,7 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                     const SizedBox(width: 16),
                     Expanded(
                       child: _buildStatCard(
-                        'Entries',
+                        AppLocalizations.of(context).entries,
                         workEntries.length.toString(),
                         Icons.fact_check,
                         Colors.green,

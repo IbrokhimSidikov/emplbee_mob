@@ -1,3 +1,4 @@
+import 'package:emplbee_mob/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -188,7 +189,7 @@ class _OnBoardPageState extends State<OnBoardPage>
                             color: Colors.black87,
                           ),
                           child: Text(
-                            'Welcome to Emplbee',
+                            AppLocalizations.of(context).onboardTitle,
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -196,7 +197,7 @@ class _OnBoardPageState extends State<OnBoardPage>
 
                         // Subtitle
                         Text(
-                          'Your comprehensive employee management solution',
+                          AppLocalizations.of(context).onboardSubtitle,
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(
                             fontSize: 16,
@@ -232,7 +233,8 @@ class _OnBoardPageState extends State<OnBoardPage>
                                       const Icon(Icons.login_rounded),
                                       const SizedBox(width: 8),
                                       Text(
-                                        'Get Started',
+                                        AppLocalizations.of(context)
+                                            .onboardButton,
                                         style: GoogleFonts.poppins(
                                           fontSize: 18,
                                           fontWeight: FontWeight.w600,

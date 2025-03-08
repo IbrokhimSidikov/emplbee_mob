@@ -1,6 +1,9 @@
+import 'package:emplbee_mob/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../providers/locale_provider.dart';
 import 'attendance.dart';
 import 'notifications_page.dart';
 
@@ -126,44 +129,64 @@ class _HomePageState extends State<HomePage>
                             ),
                           ],
                         ),
-                        // Notification Icon
-                        Stack(
+                        // Notification and Language Icons
+                        Row(
                           children: [
+                            // Language Switcher
                             IconButton(
-                              icon: const Icon(Icons.notifications_outlined,
-                                  size: 28),
+                              icon: const Icon(Icons.language, size: 28),
                               onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const NotificationsPage(),
-                                  ),
-                                );
+                                final provider = Provider.of<LocaleProvider>(
+                                    context,
+                                    listen: false);
+                                final currentLocale = provider.locale;
+                                if (currentLocale.languageCode == 'en') {
+                                  provider.setLocale(const Locale('uz'));
+                                } else {
+                                  provider.setLocale(const Locale('en'));
+                                }
                               },
                             ),
-                            Positioned(
-                              right: 8,
-                              top: 8,
-                              child: Container(
-                                padding: const EdgeInsets.all(2),
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  borderRadius: BorderRadius.circular(6),
+                            // Notification Icon
+                            Stack(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.notifications_outlined,
+                                      size: 28),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const NotificationsPage(),
+                                      ),
+                                    );
+                                  },
                                 ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 14,
-                                  minHeight: 14,
-                                ),
-                                child: const Text(
-                                  '2',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 8,
+                                Positioned(
+                                  right: 8,
+                                  top: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 14,
+                                      minHeight: 14,
+                                    ),
+                                    child: const Text(
+                                      '2',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 8,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
                                   ),
-                                  textAlign: TextAlign.center,
                                 ),
-                              ),
+                              ],
                             ),
                           ],
                         ),
@@ -180,7 +203,7 @@ class _HomePageState extends State<HomePage>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Welcome back!',
+                            AppLocalizations.of(context).welcome,
                             style: GoogleFonts.poppins(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
@@ -188,7 +211,7 @@ class _HomePageState extends State<HomePage>
                             ),
                           ),
                           Text(
-                            'What would you like to do today?',
+                            AppLocalizations.of(context).welcomeTitle,
                             style: GoogleFonts.poppins(
                               fontSize: 16,
                               color: Colors.black54,
@@ -210,16 +233,25 @@ class _HomePageState extends State<HomePage>
                           crossAxisSpacing: 16.0,
                           mainAxisSpacing: 16.0,
                           children: [
-                            _buildCard(context, 'Profile',
-                                Icons.person_4_outlined, '/profilepage'),
                             _buildCard(
                                 context,
-                                'Attendance List',
+                                AppLocalizations.of(context).profile,
+                                Icons.person_4_outlined,
+                                '/profilepage'),
+                            _buildCard(
+                                context,
+                                AppLocalizations.of(context).attendanceList,
                                 Icons.checklist_outlined,
                                 '/attendancelistpage'),
-                            _buildCard(context, 'Attendance',
-                                Icons.done_outline, null),
-                            _buildCard(context, 'Tasks', Icons.task_outlined,
+                            _buildCard(
+                                context,
+                                AppLocalizations.of(context).attendance,
+                                Icons.done_outline,
+                                null),
+                            _buildCard(
+                                context,
+                                AppLocalizations.of(context).tasks,
+                                Icons.task_outlined,
                                 '/taskspage'),
                           ],
                         ),

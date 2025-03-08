@@ -1,4 +1,5 @@
 import 'package:camera/camera.dart';
+import 'package:emplbee_mob/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -217,7 +218,9 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      isCheckedIn ? 'Check Out' : 'Check In',
+                      isCheckedIn
+                          ? AppLocalizations.of(context).checkOutTitle
+                          : AppLocalizations.of(context).checkInTitle,
                       style: GoogleFonts.poppins(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -232,7 +235,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
-                  'Please position your face within the frame',
+                  AppLocalizations.of(context).faceIddescription,
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     color: Colors.grey[600],
@@ -245,89 +248,89 @@ class _AttendanceScreenState extends State<AttendanceScreen>
               Expanded(
                 child: FadeTransition(
                   opacity: _fadeAnimation,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: ClipRRect(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16.0),
+                    decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
-                      child: Stack(
-                        children: [
-                          if (isCameraInitialized)
-                            Stack(
-                              children: [
-                                CameraPreview(controller!),
-                                CustomPaint(
-                                  painter: FaceOverlayPainter(),
-                                  child: Container(
-                                    width: MediaQuery.of(context).size.width,
-                                    height: MediaQuery.of(context).size.height,
+                    ),
+                    clipBehavior: Clip.hardEdge,
+                    child: Stack(
+                      children: [
+                        if (isCameraInitialized)
+                          Stack(
+                            children: [
+                              SizedBox.expand(
+                                child: CameraPreview(controller!),
+                              ),
+                              CustomPaint(
+                                painter: FaceOverlayPainter(),
+                                size: Size.infinite,
+                              ),
+                            ],
+                          )
+                        else
+                          Container(
+                            color: Colors.blue.shade100,
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        if (isLoading)
+                          Container(
+                            color: Colors.black54,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const CircularProgressIndicator(
+                                    color: Colors.white,
                                   ),
-                                ),
-                              ],
-                            )
-                          else
-                            Container(
-                              color: Colors.blue.shade100,
-                              child: const Center(
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          if (isLoading)
-                            Container(
-                              color: Colors.black54,
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const CircularProgressIndicator(
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    AppLocalizations.of(context).verifying,
+                                    style: GoogleFonts.poppins(
                                       color: Colors.white,
+                                      fontSize: 16,
                                     ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'Verifying...',
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
-                          if (isVerified != null && !isLoading)
-                            Container(
-                              color: isVerified!
-                                  ? Colors.green.withOpacity(0.3)
-                                  : Colors.red.withOpacity(0.3),
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      isVerified!
-                                          ? Icons.check_circle_outline
-                                          : Icons.error_outline,
+                          ),
+                        if (isVerified != null && !isLoading)
+                          Container(
+                            color: isVerified!
+                                ? Colors.green.withOpacity(0.3)
+                                : Colors.red.withOpacity(0.3),
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    isVerified!
+                                        ? Icons.check_circle_outline
+                                        : Icons.error_outline,
+                                    color: Colors.white,
+                                    size: 64,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    isVerified!
+                                        ? 'Face recognized!'
+                                        : 'Face not recognized',
+                                    style: GoogleFonts.poppins(
                                       color: Colors.white,
-                                      size: 64,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      isVerified!
-                                          ? 'Face recognized!'
-                                          : 'Face not recognized',
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.white,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
-                        ],
-                      ),
+                          ),
+                      ],
                     ),
                   ),
                 ),

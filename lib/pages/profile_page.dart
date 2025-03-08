@@ -1,3 +1,4 @@
+import 'package:emplbee_mob/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -184,9 +185,44 @@ class _ProfilePageState extends State<ProfilePage>
                       ),
                       const Spacer(),
                       IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.black87),
+                        icon:
+                            const Icon(Icons.logout_rounded, color: Colors.red),
                         onPressed: () {
-                          // TODO: Implement edit profile
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: Text('Logout',
+                                    style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.bold,
+                                    )),
+                                content: Text(
+                                    'Are you sure you want to logout?',
+                                    style: GoogleFonts.poppins()),
+                                actions: [
+                                  TextButton(
+                                    child: Text('Cancel',
+                                        style: GoogleFonts.poppins()),
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                  ),
+                                  TextButton(
+                                    child: Text('Logout',
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.red,
+                                        )),
+                                    onPressed: () {
+                                      // TODO: Implement logout logic here
+                                      Navigator.of(context)
+                                          .pushNamedAndRemoveUntil(
+                                              '/login', (route) => false);
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
+                          );
                         },
                       ),
                     ],
@@ -282,26 +318,26 @@ class _ProfilePageState extends State<ProfilePage>
                     crossAxisSpacing: 16,
                     children: [
                       _buildInfoCard(
-                        title: 'Total Hours',
+                        title: AppLocalizations.of(context).totalHours,
                         value: '$totalWorkedHours hrs',
                         icon: Icons.access_time,
                         iconColor: Colors.blue,
                         isHighlighted: true,
                       ),
                       _buildInfoCard(
-                        title: 'Monthly Hours',
+                        title: AppLocalizations.of(context).monthlyHours,
                         value: '$workedHours hrs',
                         icon: Icons.calendar_today,
                         iconColor: Colors.purple,
                       ),
                       _buildInfoCard(
-                        title: 'Available Off Days',
+                        title: AppLocalizations.of(context).availableOffDays,
                         value: '$availableOffDays days',
                         icon: Icons.beach_access,
                         iconColor: Colors.orange,
                       ),
                       _buildInfoCard(
-                        title: 'Monthly Salary',
+                        title: AppLocalizations.of(context).monthlySalary,
                         value: '\$${(salary / 1000000).toStringAsFixed(1)}M',
                         icon: Icons.account_balance_wallet,
                         iconColor: Colors.green,
@@ -317,7 +353,7 @@ class _ProfilePageState extends State<ProfilePage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Quick Actions',
+                        AppLocalizations.of(context).quickActions,
                         style: GoogleFonts.poppins(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -340,7 +376,7 @@ class _ProfilePageState extends State<ProfilePage>
                         child: Column(
                           children: [
                             _buildActionTile(
-                              'Request Time Off',
+                              AppLocalizations.of(context).requestTimeOff,
                               Icons.event_available,
                               () {
                                 // TODO: Implement time off request
@@ -348,7 +384,8 @@ class _ProfilePageState extends State<ProfilePage>
                             ),
                             const Divider(height: 1),
                             _buildActionTile(
-                              'View Attendance History',
+                              AppLocalizations.of(context)
+                                  .viewAttendanceHistory,
                               Icons.history,
                               () {
                                 // TODO: Implement attendance history view
@@ -356,7 +393,7 @@ class _ProfilePageState extends State<ProfilePage>
                             ),
                             const Divider(height: 1),
                             _buildActionTile(
-                              'Download Pay Slip',
+                              AppLocalizations.of(context).downloadPayslip,
                               Icons.description,
                               () {
                                 // TODO: Implement pay slip download
