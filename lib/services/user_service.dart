@@ -35,13 +35,11 @@ class UserService {
       // For development, return dummy data
       return UserModel(
         id: '1',
-        name: 'Ibrokhim Sidikov',
-        // position: 'Software Engineer',
+        auth_id: 'auth0|123456789',
         email: 'ibrokhim.sidikov@emplbee.com',
-        // imageUrl: null, // Add your image URL here when available
-        // workedHours: 160,
-        // salary: 15000000,
-        // availableOffDays: 15,
+        username: 'ibrokhim.sidikov',
+        createdAt: DateTime.now().toIso8601String(),
+        updatedAt: DateTime.now().toIso8601String(),
       );
     }
   }

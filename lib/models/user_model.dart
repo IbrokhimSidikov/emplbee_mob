@@ -2,38 +2,38 @@ import 'dart:convert';
 
 class UserModel {
   final String id;
+  final String auth_id;
   final String email;
-  final String name;
-  final String? picture;
-  final DateTime? emailVerified;
+  final String username;
+  final String? createdAt;
+  final String? updatedAt;
 
   UserModel({
     required this.id,
+    required this.auth_id,
     required this.email,
-    required this.name,
-    this.picture,
-    this.emailVerified,
+    required this.username,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['sub'] ?? '',
+      id: json['id'] ?? '',
+      auth_id: json['auth_id'] ?? '',
       email: json['email'] ?? '',
-      name: json['name'] ?? '',
-      picture: json['picture'],
-      emailVerified: json['email_verified'] != null
-          ? DateTime.parse(json['email_verified'])
-          : null,
+      username: json['username'] ?? '',
+      createdAt: json['createdAt'],
+      updatedAt: json['updatedAt'],
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'sub': id,
-      'email': email,
-      'name': name,
-      'picture': picture,
-      'email_verified': emailVerified?.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'auth_id': auth_id,
+        'email': email,
+        'username': username,
+        'createdAt': createdAt,
+        'updatedAt': updatedAt,
+      };
 }

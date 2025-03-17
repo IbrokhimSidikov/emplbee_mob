@@ -28,8 +28,25 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    android:scheme="com.emplbee.app"
-                    android:host="login-callback" />
+                    android:scheme="https"
+                    android:host="emplbee.uk.auth0.com"
+                    android:pathPrefix="/android/APPEMPLBEE/callback" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="appemplbee"
+                    android:host="callback" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="appemplbee"
+                    android:host="logout-callback" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

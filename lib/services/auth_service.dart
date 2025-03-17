@@ -1,22 +1,26 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_model.dart';
+import 'package:crypto/crypto.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   AuthService._internal();
 
-  final String clientId = 'XdNYrYSqdeGXenQPeMJhwfyu1J0pD1MA';
-  final String domain = 'emplbee.uk.auth0.com';
-  final String androidCallbackUri =
-      'https://emplbee.uk.auth0.com/android/APPEMPLBEE/callback';
-  final String iosCallbackUri =
-      'https://emplbee.uk.auth0.com/ios/com.emplbee.app/callback';
-  final String callbackScheme = 'com.emplbee.app';
+  static const String _clientId = 'XdNYrYSqdeGXenQPeMJhwfyu1J0pD1MA';
+  static const String _domain = 'emplbee.uk.auth0.com';
+  static const String _androidCallbackUri = 'appemplbee://callback';
+  static const String _audience = 'https://emplbee.uk.auth0.com/api/v2/';
+  static const String _iosCallbackUri = 'appemplbee://callback';
+  static const String _callbackScheme = 'appemplbee';
+  static const String _logoutCallbackUri = 'appemplbee://logout-callback';
+  final String callbackScheme = _callbackScheme;
   final storage = FlutterSecureStorage();
 
   // Storage keys
@@ -28,25 +32,62 @@ class AuthService {
 
   Future<bool> login() async {
     try {
-      final url = 'https://$domain/authorize?'
-          'audience=https://$domain/userinfo&'
-          'scope=openid profile email offline_access&'
-          'response_type=code&'
-          'client_id=$clientId&'
-          'redirect_uri=${callbackUri()}';
+      final codeVerifier = _generateCodeVerifier();
+      final codeChallenge = _generateCodeChallenge(codeVerifier);
+      final state = _generateState();
+
+      final url = Uri.https(_domain, '/authorize', {
+        'response_type': 'code',
+        'client_id': _clientId,
+        'redirect_uri': callbackUri(),
+        'scope': 'openid profile email offline_access',
+        'audience': _audience,
+        'code_challenge': codeChallenge,
+        'code_challenge_method': 'S256',
+        'state': state,
+        'prompt': 'login'
+      }).toString();
+
+      await storage.write(key: '_code_verifier', value: codeVerifier);
+      await storage.write(key: '_state', value: state);
+
+      print('Auth URL: $url'); // Debug log
+      print('Callback URI: ${callbackUri()}'); // Debug log
 
       final result = await FlutterWebAuth2.authenticate(
-          url: url, callbackUrlScheme: callbackScheme);
+        url: url,
+        callbackUrlScheme: _callbackScheme,
+      );
 
-      final code = Uri.parse(result).queryParameters['code'];
-      if (code == null) return false;
+      print('Auth Result: $result'); // Debug log
+
+      final resultUri = Uri.parse(result);
+      final code = resultUri.queryParameters['code'];
+      final resultState = resultUri.queryParameters['state'];
+      final error = resultUri.queryParameters['error'];
+      final errorDescription = resultUri.queryParameters['error_description'];
+
+      if (error != null) {
+        print('Auth0 Error: $error - $errorDescription');
+        return false;
+      }
+
+      final storedState = await storage.read(key: '_state');
+      if (resultState != storedState) {
+        print('State mismatch: $resultState != $storedState');
+        return false;
+      }
+
+      if (code == null) {
+        print('No authorization code received');
+        return false;
+      }
 
       await _exchangeCodeForTokens(code);
       await _fetchAndStoreUserProfile();
       return true;
     } catch (e) {
       print('Login error: $e');
-      // Check if the error is due to user cancellation
       if (e.toString().contains('CANCELED') ||
           e.toString().contains('canceled')) {
         return false;
@@ -56,23 +97,23 @@ class AuthService {
   }
 
   Future<void> _exchangeCodeForTokens(String code) async {
-    final tokenUrl = 'https://$domain/oauth/token';
-    final body = {
-      'grant_type': 'authorization_code',
-      'client_id': clientId,
-      'code': code,
-      'redirect_uri': callbackUri(),
-    };
+    final codeVerifier = await storage.read(key: '_code_verifier');
+    if (codeVerifier == null) throw Exception('Code verifier not found');
 
     final response = await http.post(
-      Uri.parse(tokenUrl),
+      Uri.parse('https://$_domain/oauth/token'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
+      body: jsonEncode({
+        'grant_type': 'authorization_code',
+        'client_id': _clientId,
+        'code_verifier': codeVerifier,
+        'code': code,
+        'redirect_uri': callbackUri(),
+      }),
     );
 
     if (response.statusCode != 200) {
-      throw Exception(
-          'Token request failed with status: ${response.statusCode}, body: ${response.body}');
+      throw Exception('Failed to exchange code for tokens: ${response.body}');
     }
 
     final tokens = jsonDecode(response.body);
@@ -98,12 +139,58 @@ class AuthService {
     }
   }
 
+  Future<List<String>> getUserPermissions() async {
+    final token = await getAccessToken();
+    if (token == null) throw AuthException('No access token available');
+
+    final response = await http.get(
+      Uri.parse('YOUR_BACKEND_API/v1/user/permissions'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return List<String>.from(data['permissions'] ?? []);
+    } else {
+      await _handleError(response);
+      return [];
+    }
+  }
+
+  Future<bool> validateToken(String token) async {
+    try {
+      // This matches your PHP backend token validation
+      final parts = token.split('.');
+      if (parts.length != 3) return false;
+
+      final payload = json
+          .decode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+
+      // Check if token is expired
+      final expiry = DateTime.fromMillisecondsSinceEpoch(payload['exp'] * 1000);
+      if (DateTime.now().isAfter(expiry)) return false;
+
+      // Check issuer matches your domain
+      if (payload['iss'] != 'https://$_domain/') return false;
+
+      // Check audience matches your clientId
+      if (payload['aud'] != _clientId) return false;
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future<void> _fetchAndStoreUserProfile() async {
     final token = await getAccessToken();
     if (token == null) throw Exception('No access token available');
 
     final response = await http.get(
-      Uri.parse('https://$domain/userinfo'),
+      Uri.parse('https://$_domain/userinfo'),
       headers: {'Authorization': 'Bearer $token'},
     );
 
@@ -138,11 +225,11 @@ class AuthService {
     if (refreshToken == null) throw Exception('No refresh token available');
 
     final response = await http.post(
-      Uri.parse('https://$domain/oauth/token'),
+      Uri.parse('https://$_domain/oauth/token'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'grant_type': 'refresh_token',
-        'client_id': clientId,
+        'client_id': _clientId,
         'refresh_token': refreshToken,
       }),
     );
@@ -177,10 +264,10 @@ class AuthService {
     if (refreshToken != null) {
       try {
         await http.post(
-          Uri.parse('https://$domain/oauth/revoke'),
+          Uri.parse('https://$_domain/oauth/revoke'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
-            'client_id': clientId,
+            'client_id': _clientId,
             'token': refreshToken,
           }),
         );
@@ -194,7 +281,7 @@ class AuthService {
   }
 
   String callbackUri() {
-    return Platform.isAndroid ? androidCallbackUri : iosCallbackUri;
+    return Platform.isAndroid ? _androidCallbackUri : _iosCallbackUri;
   }
 
   Future<bool> isAuthenticated() async {
@@ -202,4 +289,91 @@ class AuthService {
     final user = await getUserProfile();
     return token != null && user != null;
   }
+}
+
+class AuthError {
+  final String code;
+  final String message;
+
+  AuthError.fromJson(Map<String, dynamic> json)
+      : code = json['statusCode']?.toString() ?? '500',
+        message = json['message'] ?? 'Unknown error';
+}
+
+Future<void> _handleError(http.Response response) async {
+  if (response.statusCode != 200) {
+    final error = AuthError.fromJson(jsonDecode(response.body));
+    throw AuthException('${error.code}: ${error.message}');
+  }
+}
+
+String _generateCodeVerifier() {
+  const length = 64;
+  final random = Random.secure();
+  final values = List<int>.generate(length, (_) => random.nextInt(256));
+  return base64Url
+      .encode(values)
+      .replaceAll('=', '')
+      .replaceAll('+', '-')
+      .replaceAll('/', '_');
+}
+
+String _generateCodeChallenge(String verifier) {
+  final bytes = utf8.encode(verifier);
+  final digest = sha256.convert(bytes);
+  return base64Url
+      .encode(digest.bytes)
+      .replaceAll('=', '')
+      .replaceAll('+', '-')
+      .replaceAll('/', '_');
+}
+
+bool _isTokenValid(String token) {
+  try {
+    final parts = token.split('.');
+    if (parts.length != 3) return false;
+
+    final payload = json
+        .decode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+
+    final expiry = DateTime.fromMillisecondsSinceEpoch(payload['exp'] * 1000);
+    return DateTime.now().isBefore(expiry);
+  } catch (e) {
+    return false;
+  }
+}
+
+Future<T> _handleNetworkRequest<T>(Future<T> Function() request) async {
+  try {
+    return await request();
+  } on SocketException {
+    throw AuthException('No internet connection');
+  } on TimeoutException {
+    throw AuthException('Request timed out');
+  } catch (e) {
+    throw AuthException('Network error: ${e.toString()}');
+  }
+}
+
+class AuthException implements Exception {
+  final String message;
+  AuthException(this.message);
+
+  @override
+  String toString() => message;
+}
+
+String _generateState() {
+  final random = Random.secure();
+  final values = List<int>.generate(16, (_) => random.nextInt(256));
+  return base64Url.encode(values);
+}
+
+class ApiError {
+  final String error;
+  final String errorDescription;
+
+  ApiError.fromJson(Map<String, dynamic> json)
+      : error = json['error'],
+        errorDescription = json['error_description'];
 }

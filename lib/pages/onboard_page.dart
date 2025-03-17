@@ -211,11 +211,11 @@ class _OnBoardPageState extends State<OnBoardPage>
                           width: double.infinity,
                           height: 56,
                           child: ElevatedButton(
-                            // onPressed: _isLoading ? null : _handleLogin,
-                            onPressed: () {
-                              Navigator.pushReplacementNamed(
-                                  context, '/homepage');
-                            },
+                            onPressed: _isLoading ? null : _handleLogin,
+                            // onPressed: () {
+                            //   Navigator.pushReplacementNamed(
+                            //       context, '/homepage');
+                            // },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue,
                               foregroundColor: Colors.white,

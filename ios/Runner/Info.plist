@@ -55,7 +55,7 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.emplbee.app</string>
+				<string>appemplbee</string>
 			</array>
 			<key>CFBundleURLName</key>
 			<string>auth0</string>
