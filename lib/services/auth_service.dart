@@ -259,25 +259,39 @@ class AuthService {
   }
 
   Future<void> logout() async {
-    // Revoke the refresh token on Auth0
-    final refreshToken = await storage.read(key: _refreshTokenKey);
-    if (refreshToken != null) {
-      try {
-        await http.post(
-          Uri.parse('https://$_domain/oauth/revoke'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'client_id': _clientId,
-            'token': refreshToken,
-          }),
-        );
-      } catch (e) {
-        print('Error revoking refresh token: $e');
-      }
-    }
+    try {
+      print('Logout: Starting logout process');
+      final idToken = await storage.read(key: _idTokenKey);
+      print(
+          'Logout: Retrieved ID token ${idToken != null ? '(found)' : '(not found)'}');
 
-    // Clear all stored data
-    await storage.deleteAll();
+      // Construct Auth0 logout URL
+      final logoutUrl = Uri.https(_domain, '/v2/logout', {
+        'client_id': _clientId,
+        'returnTo': _logoutCallbackUri,
+        if (idToken != null) 'id_token_hint': idToken,
+      }).toString();
+      print('Logout: Constructed logout URL: $logoutUrl');
+
+      // Clear tokens from secure storage
+      print('Logout: Clearing secure storage');
+      await storage.deleteAll();
+      print('Logout: Secure storage cleared');
+
+      // Redirect to Auth0 logout endpoint
+      print('Logout: Redirecting to Auth0 logout endpoint');
+      await FlutterWebAuth2.authenticate(
+        url: logoutUrl,
+        callbackUrlScheme: _callbackScheme,
+      );
+      print('Logout: Successfully logged out from Auth0');
+    } catch (e) {
+      print('Logout error: $e');
+      // Even if Auth0 logout fails, ensure local tokens are cleared
+      print('Logout: Clearing secure storage after error');
+      await storage.deleteAll();
+      rethrow;
+    }
   }
 
   String callbackUri() {

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
+import '../services/auth_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -187,42 +188,29 @@ class _ProfilePageState extends State<ProfilePage>
                       IconButton(
                         icon:
                             const Icon(Icons.logout_rounded, color: Colors.red),
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                title: Text('Logout',
-                                    style: GoogleFonts.poppins(
-                                      fontWeight: FontWeight.bold,
-                                    )),
+                        onPressed: () async {
+                          print('ProfilePage: Logout button pressed');
+                          try {
+                            print('ProfilePage: Starting logout process');
+                            await AuthService().logout();
+                            print(
+                                'ProfilePage: Logout successful, navigating to onboard page');
+                            Navigator.of(context)
+                                .pushNamedAndRemoveUntil('/', (route) => false);
+                            print('ProfilePage: Navigation complete');
+                          } catch (e) {
+                            print('ProfilePage: Logout failed with error: $e');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
                                 content: Text(
-                                    'Are you sure you want to logout?',
-                                    style: GoogleFonts.poppins()),
-                                actions: [
-                                  TextButton(
-                                    child: Text('Cancel',
-                                        style: GoogleFonts.poppins()),
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                  ),
-                                  TextButton(
-                                    child: Text('Logout',
-                                        style: GoogleFonts.poppins(
-                                          color: Colors.red,
-                                        )),
-                                    onPressed: () {
-                                      // TODO: Implement logout logic here
-                                      Navigator.of(context)
-                                          .pushNamedAndRemoveUntil(
-                                              '/login', (route) => false);
-                                    },
-                                  ),
-                                ],
-                              );
-                            },
-                          );
+                                  'Logout failed: ${e.toString()}',
+                                  style: GoogleFonts.poppins(),
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            print('ProfilePage: Error snackbar shown to user');
+                          }
                         },
                       ),
                     ],
