@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import '../services/auth_service.dart';
+import '../models/user_model.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -17,16 +18,14 @@ class _ProfilePageState extends State<ProfilePage>
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
 
-  final String employeeName = "Ibrokhim Sidikov";
-  final String position = "Software Engineer";
-  final String email = "ibrokhim.sidikov@emplbee.com";
+  UserModel? _user;
   double totalWorkedHours = 0;
   final double salary = 15000000;
   final int workedHours = 160;
   final int availableOffDays = 15;
-  String? profileImageUrl;
   bool isOnline = false;
   final _storage = FlutterSecureStorage();
+  final _authService = AuthService();
 
   @override
   void initState() {
@@ -45,8 +44,22 @@ class _ProfilePageState extends State<ProfilePage>
     ));
 
     _controller.forward();
+    _loadUserProfile();
     _loadAttendanceStatus();
     _calculateTotalHours();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final userJson = await _storage.read(key: 'user_profile');
+      if (userJson != null) {
+        setState(() {
+          _user = UserModel.fromJson(json.decode(userJson));
+        });
+      }
+    } catch (e) {
+      print('Error loading user profile: $e');
+    }
   }
 
   @override
@@ -229,14 +242,16 @@ class _ProfilePageState extends State<ProfilePage>
                             CircleAvatar(
                               radius: 50,
                               backgroundColor: Colors.blue.shade100,
-                              backgroundImage: profileImageUrl != null
-                                  ? NetworkImage(profileImageUrl!)
+                              backgroundImage: _user?.photo != null
+                                  ? NetworkImage(_user!.photo!)
                                   : null,
-                              child: profileImageUrl == null
+                              child: _user?.photo == null
                                   ? Text(
-                                      employeeName
+                                      (_user?.name ?? _user?.username ?? '')
                                           .split(' ')
-                                          .map((e) => e[0])
+                                          .map((e) => e.isNotEmpty
+                                              ? e[0].toUpperCase()
+                                              : '')
                                           .join(),
                                       style: GoogleFonts.poppins(
                                         fontSize: 32,
@@ -267,7 +282,7 @@ class _ProfilePageState extends State<ProfilePage>
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          employeeName,
+                          _user?.name ?? _user?.username ?? 'Loading...',
                           style: GoogleFonts.poppins(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -276,7 +291,7 @@ class _ProfilePageState extends State<ProfilePage>
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          position,
+                          _user?.position ?? 'Employee',
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             color: Colors.grey[600],
@@ -284,7 +299,7 @@ class _ProfilePageState extends State<ProfilePage>
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          email,
+                          _user?.email ?? '',
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             color: Colors.grey[500],

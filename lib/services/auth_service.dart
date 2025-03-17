@@ -189,18 +189,94 @@ class AuthService {
     final token = await getAccessToken();
     if (token == null) throw Exception('No access token available');
 
-    final response = await http.get(
+    // First, get the basic profile from Auth0
+    final auth0Response = await http.get(
       Uri.parse('https://$_domain/userinfo'),
       headers: {'Authorization': 'Bearer $token'},
     );
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to fetch user profile');
+    if (auth0Response.statusCode != 200) {
+      throw Exception('Failed to fetch Auth0 user profile');
     }
 
-    final userData = jsonDecode(response.body);
-    final user = UserModel.fromJson(userData);
-    await storage.write(key: _userProfileKey, value: jsonEncode(user.toJson()));
+    final auth0Data = jsonDecode(auth0Response.body);
+    print('Auth0 User Data: $auth0Data'); // Debug log
+
+    try {
+      final apiResponse = await http.get(
+        Uri.parse('https://api.emplbee.com/v1/user/profile'), //PHP backend
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (apiResponse.statusCode == 200) {
+        final apiData = jsonDecode(apiResponse.body);
+        print('Backend API User Data: $apiData'); // Debug log
+
+        // Merge Auth0 data with your CRM data
+        final Map<String, dynamic> mergedData = {
+          ...Map<String, dynamic>.from(auth0Data),
+          ...Map<String, dynamic>.from(apiData),
+          'auth_id': auth0Data['sub'],
+          'email': auth0Data['email'],
+          'name': apiData['name'] ??
+              auth0Data['name'] ??
+              auth0Data['email']?.split('@')[0],
+          'username': apiData['username'] ??
+              auth0Data['nickname'] ??
+              auth0Data['email']?.split('@')[0],
+          'position': apiData['position'] ?? null,
+          'phone': apiData['phone'] ?? null,
+          'photo': apiData['photo'] ?? null,
+          'createdAt': DateTime.now().toIso8601String(),
+          'updatedAt': DateTime.now().toIso8601String(),
+        };
+
+        final user = UserModel.fromJson(mergedData);
+        await storage.write(
+            key: _userProfileKey, value: jsonEncode(user.toJson()));
+      } else {
+        // If backend API fails, still save Auth0 data
+        final Map<String, dynamic> basicData = {
+          'id': auth0Data['sub'],
+          'auth_id': auth0Data['sub'],
+          'email': auth0Data['email'],
+          'username':
+              auth0Data['nickname'] ?? auth0Data['email']?.split('@')[0],
+          'name': auth0Data['name'],
+          'position': null,
+          'phone': null,
+          'photo': null,
+          'createdAt': DateTime.now().toIso8601String(),
+          'updatedAt': DateTime.now().toIso8601String(),
+        };
+
+        final user = UserModel.fromJson(basicData);
+        await storage.write(
+            key: _userProfileKey, value: jsonEncode(user.toJson()));
+      }
+    } catch (e) {
+      print('Error fetching backend profile: $e');
+      // If backend API fails, still save Auth0 data
+      final Map<String, dynamic> basicData = {
+        'id': auth0Data['sub'],
+        'auth_id': auth0Data['sub'],
+        'email': auth0Data['email'],
+        'username': auth0Data['nickname'] ?? auth0Data['email']?.split('@')[0],
+        'name': auth0Data['name'],
+        'position': null,
+        'phone': null,
+        'photo': null,
+        'createdAt': DateTime.now().toIso8601String(),
+        'updatedAt': DateTime.now().toIso8601String(),
+      };
+
+      final user = UserModel.fromJson(basicData);
+      await storage.write(
+          key: _userProfileKey, value: jsonEncode(user.toJson()));
+    }
   }
 
   Future<bool> refreshTokenIfNeeded() async {
