@@ -37,36 +37,64 @@ class UserService {
       }
 
       final auth0Data = json.decode(auth0Response.body);
+      print('Auth0 Profile Data: $auth0Data'); // Debug log
 
       // Then get additional user data from your backend
       final backendResponse = await http.get(
-        Uri.parse('$baseUrl/api/user/profile'),
+        Uri.parse('$baseUrl/v1/user/profile'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
 
-      if (backendResponse.statusCode != 200) {
-        throw Exception(
-            'Failed to get user profile from backend: ${backendResponse.body}');
+      print(
+          'Backend Response Status: ${backendResponse.statusCode}'); // Debug log
+      print('Backend Response Body: ${backendResponse.body}'); // Debug log
+
+      if (backendResponse.statusCode == 200) {
+        final backendData = json.decode(backendResponse.body);
+        print('Backend Profile Data: $backendData'); // Debug log
+
+        // Merge Auth0 and backend data
+        final Map<String, dynamic> mergedData = {
+          ...Map<String, dynamic>.from(auth0Data),
+          ...Map<String, dynamic>.from(backendData),
+          'auth_id': auth0Data['sub'],
+          'email': auth0Data['email'],
+          'username': backendData['username'] ??
+              auth0Data['nickname'] ??
+              auth0Data['email']?.split('@')[0],
+          'name': backendData['name'] ??
+              auth0Data['name'] ??
+              auth0Data['email']?.split('@')[0],
+          'photo': backendData['photo'] ?? auth0Data['picture'],
+          'createdAt': DateTime.now().toIso8601String(),
+          'updatedAt': DateTime.now().toIso8601String(),
+        };
+
+        return UserModel.fromJson(mergedData);
+      } else {
+        // If backend fails, use Auth0 data only
+        print('Using Auth0 data only due to backend error');
+        final Map<String, dynamic> basicData = {
+          'id': auth0Data['sub'],
+          'auth_id': auth0Data['sub'],
+          'email': auth0Data['email'],
+          'username':
+              auth0Data['nickname'] ?? auth0Data['email']?.split('@')[0],
+          'name': auth0Data['name'],
+          'photo': auth0Data['picture'],
+          'position': null,
+          'phone': null,
+          'createdAt': DateTime.now().toIso8601String(),
+          'updatedAt': DateTime.now().toIso8601String(),
+        };
+
+        return UserModel.fromJson(basicData);
       }
-
-      final backendData = json.decode(backendResponse.body);
-
-      // Combine data from both sources
-      return UserModel(
-        id: backendData['id'] ?? '',
-        auth_id: auth0Data['sub'] ?? '',
-        email: auth0Data['email'] ?? '',
-        username: backendData['username'] ?? auth0Data['nickname'] ?? '',
-        createdAt:
-            backendData['created_at'] ?? DateTime.now().toIso8601String(),
-        updatedAt:
-            backendData['updated_at'] ?? DateTime.now().toIso8601String(),
-      );
     } catch (e) {
-      print('Error fetching user data: $e');
+      print('Error in getCurrentUser: $e');
       rethrow;
     }
   }

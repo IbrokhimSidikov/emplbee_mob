@@ -63,6 +63,8 @@ class AuthService {
 
       final resultUri = Uri.parse(result);
       final code = resultUri.queryParameters['code'];
+      print('Authorization Code: $code'); // Debug log
+
       final resultState = resultUri.queryParameters['state'];
       final error = resultUri.queryParameters['error'];
       final errorDescription = resultUri.queryParameters['error_description'];
@@ -84,6 +86,11 @@ class AuthService {
       }
 
       await _exchangeCodeForTokens(code);
+      print('Tokens exchanged successfully'); // Debug log
+
+      final accessToken = await getAccessToken();
+      print('Access Token after login: $accessToken'); // Debug log
+
       await _fetchAndStoreUserProfile();
       return true;
     } catch (e) {
@@ -97,6 +104,7 @@ class AuthService {
   }
 
   Future<void> _exchangeCodeForTokens(String code) async {
+    print('Exchanging code for tokens...'); // Debug log
     final codeVerifier = await storage.read(key: '_code_verifier');
     if (codeVerifier == null) throw Exception('Code verifier not found');
 
@@ -117,6 +125,10 @@ class AuthService {
     }
 
     final tokens = jsonDecode(response.body);
+    print('Received tokens from Auth0:'); // Debug log
+    print('Access Token: ${tokens['access_token']}'); // Debug log
+    print('Token Type: ${tokens['token_type']}'); // Debug log
+    print('Expires In: ${tokens['expires_in']} seconds'); // Debug log
     await _storeTokens(tokens);
   }
 
@@ -331,7 +343,9 @@ class AuthService {
 
   Future<String?> getAccessToken() async {
     await refreshTokenIfNeeded();
-    return await storage.read(key: _accessTokenKey);
+    final token = await storage.read(key: _accessTokenKey);
+    print('Current Access Token: $token'); // Debug log
+    return token;
   }
 
   Future<void> logout() async {
