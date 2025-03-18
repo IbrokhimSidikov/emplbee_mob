@@ -197,11 +197,52 @@ class AuthService {
     }
   }
 
+  Future<Map<String, dynamic>?> _fetchConfig() async {
+    final token = await getAccessToken();
+    if (token == null) return null;
+
+    print('Fetching config with token: $token'); // Debug log
+    try {
+      final response = await http.get(
+        Uri.parse(
+            'https://app.emplbee.com/api/v1/config?fields=memberId,organizationId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('Config Response Status: ${response.statusCode}'); // Debug log
+      // print('Config Response Body: ${response.body}'); // Debug log
+
+      if (response.statusCode == 200) {
+        final configData = jsonDecode(response.body);
+        await storage.write(
+            key: 'memberId', value: configData['memberId']?.toString());
+        await storage.write(
+            key: 'organizationId',
+            value: configData['organizationId']?.toString());
+        return {
+          'memberId': configData['memberId'],
+          'organizationId': configData['organizationId'],
+        };
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching config: $e');
+      return null;
+    }
+  }
+
   Future<void> _fetchAndStoreUserProfile() async {
     final token = await getAccessToken();
     if (token == null) throw Exception('No access token available');
 
-    // First, get the basic profile from Auth0
+    // First fetch config to get member_id
+    final configData = await _fetchConfig();
+    print('Config Data: $configData'); // Debug log
+
+    // Then get user info from Auth0
     final auth0Response = await http.get(
       Uri.parse('https://$_domain/userinfo'),
       headers: {'Authorization': 'Bearer $token'},
@@ -216,7 +257,7 @@ class AuthService {
 
     try {
       final apiResponse = await http.get(
-        Uri.parse('https://api.emplbee.com/v1/user/profile'), //PHP backend
+        Uri.parse('https://api.emplbee.com/v1/user/profile'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -242,6 +283,7 @@ class AuthService {
           'position': apiData['position'] ?? null,
           'phone': apiData['phone'] ?? null,
           'photo': apiData['photo'] ?? null,
+          'member_id': configData?['member_id'],
           'createdAt': DateTime.now().toIso8601String(),
           'updatedAt': DateTime.now().toIso8601String(),
         };
@@ -261,6 +303,7 @@ class AuthService {
           'position': null,
           'phone': null,
           'photo': null,
+          'member_id': configData?['member_id'],
           'createdAt': DateTime.now().toIso8601String(),
           'updatedAt': DateTime.now().toIso8601String(),
         };
@@ -281,6 +324,7 @@ class AuthService {
         'position': null,
         'phone': null,
         'photo': null,
+        'member_id': configData?['member_id'],
         'createdAt': DateTime.now().toIso8601String(),
         'updatedAt': DateTime.now().toIso8601String(),
       };
@@ -346,6 +390,57 @@ class AuthService {
     final token = await storage.read(key: _accessTokenKey);
     print('Current Access Token: $token'); // Debug log
     return token;
+  }
+
+  Future<bool> updateMemberStatus(String status) async {
+    final token = await getAccessToken();
+    if (token == null) return false;
+    print('Current Access Token: $token');
+    final memberId = await storage.read(key: 'memberId');
+    if (memberId == null) {
+      print('No member ID found');
+      return false;
+    }
+
+    try {
+      print('\n=== Updating Member Status ===');
+      print('Member ID: $memberId');
+      print('New Status: $status');
+
+      final requestBody = {
+        'id': memberId,
+        'attendanceStatus': status,
+      };
+      print('Request Body: ${jsonEncode(requestBody)}');
+
+      final response = await http.patch(
+        Uri.parse('https://app.emplbee.com/api/v1/member'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      print('\n=== Response Details ===');
+      print('Status Code: ${response.statusCode}');
+      print('Response Headers: ${response.headers}');
+      print('Response Body: ${response.body}');
+      print('========================\n');
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error updating member status: $e');
+      return false;
+    }
+  }
+
+  Future<String?> getMemberId() async {
+    return await storage.read(key: 'memberId');
+  }
+
+  Future<String?> getOrganizationId() async {
+    return await storage.read(key: 'organizationId');
   }
 
   Future<void> logout() async {

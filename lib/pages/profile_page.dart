@@ -73,6 +73,31 @@ class _ProfilePageState extends State<ProfilePage>
     setState(() {
       isOnline = status == 'checked_in';
     });
+    // Update server status on app launch
+    if (isOnline) {
+      _updateAttendanceStatus(true);
+    }
+  }
+
+  Future<void> _updateAttendanceStatus(bool isOnline) async {
+    try {
+      final success = await AuthService()
+          .updateMemberStatus(isOnline ? 'online' : 'offline');
+      if (success) {
+        setState(() {
+          this.isOnline = isOnline;
+        });
+        await _storage.write(
+            key: 'attendance_status',
+            value: isOnline ? 'checked_in' : 'checked_out');
+        print(
+            'Attendance status updated successfully to: ${isOnline ? 'online' : 'offline'}');
+      } else {
+        print('Failed to update attendance status');
+      }
+    } catch (e) {
+      print('Error updating attendance status: $e');
+    }
   }
 
   Future<void> _calculateTotalHours() async {
@@ -264,18 +289,22 @@ class _ProfilePageState extends State<ProfilePage>
                             Positioned(
                               bottom: 0,
                               right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: isOnline ? Colors.green : Colors.grey,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 2,
+                              child: GestureDetector(
+                                onTap: () => _updateAttendanceStatus(!isOnline),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        isOnline ? Colors.green : Colors.grey,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
                                   ),
+                                  width: 20,
+                                  height: 20,
                                 ),
-                                width: 20,
-                                height: 20,
                               ),
                             ),
                           ],
