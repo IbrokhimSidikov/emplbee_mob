@@ -73,10 +73,6 @@ class _ProfilePageState extends State<ProfilePage>
     setState(() {
       isOnline = status == 'checked_in';
     });
-    // Update server status on app launch
-    if (isOnline) {
-      _updateAttendanceStatus(true);
-    }
   }
 
   Future<void> _updateAttendanceStatus(bool isOnline) async {

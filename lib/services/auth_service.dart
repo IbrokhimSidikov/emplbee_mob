@@ -92,6 +92,11 @@ class AuthService {
       print('Access Token after login: $accessToken'); // Debug log
 
       await _fetchAndStoreUserProfile();
+
+      // Update attendance status to online after successful login
+      await updateMemberStatus('online');
+      await storage.write(key: 'attendance_status', value: 'checked_in');
+
       return true;
     } catch (e) {
       print('Login error: $e');
@@ -204,8 +209,7 @@ class AuthService {
     print('Fetching config with token: $token'); // Debug log
     try {
       final response = await http.get(
-        Uri.parse(
-            'https://app.emplbee.com/api/v1/config?fields=memberId,organizationId'),
+        Uri.parse('https://app.emplbee.com/api/v1/config'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -213,7 +217,7 @@ class AuthService {
       );
 
       print('Config Response Status: ${response.statusCode}'); // Debug log
-      // print('Config Response Body: ${response.body}'); // Debug log
+      print('Config Response Body: ${response.body}'); // Debug log
 
       if (response.statusCode == 200) {
         final configData = jsonDecode(response.body);
@@ -393,40 +397,18 @@ class AuthService {
   }
 
   Future<bool> updateMemberStatus(String status) async {
-    final token = await getAccessToken();
-    if (token == null) return false;
-    print('Current Access Token: $token');
-    final memberId = await storage.read(key: 'memberId');
-    if (memberId == null) {
-      print('No member ID found');
-      return false;
-    }
-
     try {
-      print('\n=== Updating Member Status ===');
-      print('Member ID: $memberId');
-      print('New Status: $status');
+      final token = await getAccessToken();
+      if (token == null) throw Exception('No access token available');
 
-      final requestBody = {
-        'id': memberId,
-        'attendanceStatus': status,
-      };
-      print('Request Body: ${jsonEncode(requestBody)}');
-
-      final response = await http.patch(
-        Uri.parse('https://app.emplbee.com/api/v1/member'),
+      final response = await http.post(
+        Uri.parse('https://api.emplbee.com/v1/member/status'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode(requestBody),
+        body: json.encode({'status': status}),
       );
-
-      print('\n=== Response Details ===');
-      print('Status Code: ${response.statusCode}');
-      print('Response Headers: ${response.headers}');
-      print('Response Body: ${response.body}');
-      print('========================\n');
 
       return response.statusCode == 200;
     } catch (e) {
