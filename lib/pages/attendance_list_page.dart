@@ -65,25 +65,20 @@ class _AttendanceListPageState extends State<AttendanceListPage>
           await _userService.getMemberDetails(currentUser.memberId!);
       print('Fetched member details for ID ${currentUser.memberId}');
 
-      // if (details['attendances'] != null) {
-      //   final attendancesList = details['attendances'] as List;
-      //   final parsedAttendances = attendancesList.map((attendance) {
-      //     final model = AttendanceModel.fromJson(attendance);
-      //     print('Parsed attendance: ${json.encode({
-      //           'date': model.getFormattedDate(),
-      //           'checkIn': model.getFormattedCheckIn(),
-      //           'checkOut': model.getFormattedCheckOut(),
-      //           'duration': model.getFormattedDuration(),
-      //           'status': model.status
-      //         })}');
-      //     return model;
-      //   }).toList();
+      final attendances = details['attendances'] as List?;
+      if (attendances != null && attendances.isNotEmpty) {
+        final parsedAttendances = attendances.map((attendance) {
+          return AttendanceModel.fromJson(attendance);
+        }).toList();
 
-      //   setState(() {
-      //     _attendances = parsedAttendances;
-      //     _attendances.sort((a, b) => b.checkIn.compareTo(a.checkIn));
-      //   });
-      // }
+        setState(() {
+          _attendances = parsedAttendances;
+          _attendances.sort((a, b) => b.checkIn.compareTo(a.checkIn));
+        });
+      } else {
+        print('No attendance records found');
+        setState(() => _attendances = []);
+      }
     } catch (e) {
       print('Error loading attendance data: $e');
     } finally {
@@ -100,9 +95,8 @@ class _AttendanceListPageState extends State<AttendanceListPage>
   }
 
   Widget _buildAttendanceCard(AttendanceModel attendance) {
-    final bool isToday = attendance.checkIn.day == DateTime.now().day;
     return Card(
-      elevation: isToday ? 2 : 1,
+      elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
@@ -110,9 +104,11 @@ class _AttendanceListPageState extends State<AttendanceListPage>
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(15),
-          border: isToday
-              ? Border.all(color: Colors.blue.shade200, width: 1.5)
-              : null,
+          border: Border.all(
+            color: Color(
+                int.parse(attendance.getStatusColor().replaceAll('#', '0xFF'))),
+            width: 1,
+          ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -127,17 +123,18 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: isToday
-                              ? Colors.blue.shade50
-                              : Colors.grey.shade50,
+                          color: Color(int.parse(attendance
+                                  .getStatusColor()
+                                  .replaceAll('#', '0xFF')))
+                              .withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.calendar_today,
                           size: 20,
-                          color: isToday
-                              ? Colors.blue.shade700
-                              : Colors.grey.shade700,
+                          color: Color(int.parse(attendance
+                              .getStatusColor()
+                              .replaceAll('#', '0xFF'))),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -145,8 +142,7 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                         attendance.getFormattedDate(),
                         style: GoogleFonts.poppins(
                           fontSize: 16,
-                          fontWeight:
-                              isToday ? FontWeight.bold : FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                           color: Colors.black87,
                         ),
                       ),
@@ -156,20 +152,19 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: attendance.checkOut != null
-                          ? Colors.green.shade50
-                          : Colors.orange.shade50,
+                      color: Color(int.parse(attendance
+                              .getStatusColor()
+                              .replaceAll('#', '0xFF')))
+                          .withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      attendance.checkOut != null
-                          ? AppLocalizations.of(context).completed
-                          : AppLocalizations.of(context).inProgress,
+                      attendance.checkInStatus.toUpperCase(),
                       style: GoogleFonts.poppins(
                         fontSize: 12,
-                        color: attendance.checkOut != null
-                            ? Colors.green.shade700
-                            : Colors.orange.shade700,
+                        color: Color(int.parse(attendance
+                            .getStatusColor()
+                            .replaceAll('#', '0xFF'))),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -185,6 +180,9 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                     attendance.getFormattedCheckIn(),
                     Icons.login,
                     Colors.green,
+                    attendance.lateMinutes != '0м'
+                        ? attendance.lateMinutes
+                        : null,
                   ),
                   Container(
                     height: 40,
@@ -193,22 +191,30 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                   ),
                   _buildTimeInfo(
                     AppLocalizations.of(context).checkOut,
-                    attendance.checkOut != null
-                        ? attendance.getFormattedCheckOut()
-                        : '-',
+                    attendance.getFormattedCheckOut(),
                     Icons.logout,
                     Colors.red,
+                    attendance.earlyMinutes != '0м'
+                        ? attendance.earlyMinutes
+                        : null,
                   ),
-                  Container(
-                    height: 40,
-                    width: 1,
-                    color: Colors.grey.shade200,
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildInfoChip(
+                    Icons.access_time,
+                    attendance.getShiftTime(),
+                    Colors.blue.shade100,
+                    Colors.blue.shade700,
                   ),
-                  _buildTimeInfo(
-                    AppLocalizations.of(context).duration,
-                    _formatDuration(attendance.checkIn, attendance.checkOut),
+                  _buildInfoChip(
                     Icons.timer,
-                    Colors.blue,
+                    attendance.getFormattedDuration(),
+                    Colors.green.shade100,
+                    Colors.green.shade700,
                   ),
                 ],
               ),
@@ -220,28 +226,71 @@ class _AttendanceListPageState extends State<AttendanceListPage>
   }
 
   Widget _buildTimeInfo(
-      String label, String value, IconData icon, Color color) {
-    return Column(
-      children: [
-        Icon(icon, size: 20, color: color.withOpacity(0.7)),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: Colors.grey[600],
+      String label, String time, IconData icon, Color color, String? subtitle) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+            ),
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 4),
+              Text(
+                time,
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                color: Colors.red.shade400,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoChip(
+      IconData icon, String label, Color bgColor, Color fgColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: fgColor),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              color: fgColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
