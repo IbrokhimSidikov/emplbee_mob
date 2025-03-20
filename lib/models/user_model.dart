@@ -10,8 +10,8 @@ class UserModel {
   final String? type;
   final String? phone;
   final String? photo;
-  final String? member_id;
-  final String? organization_id;
+  final String? memberId;
+  final String? organizationId;
   final String createdAt;
   final String updatedAt;
 
@@ -25,8 +25,8 @@ class UserModel {
     this.type,
     this.phone,
     this.photo,
-    this.member_id,
-    this.organization_id,
+    this.memberId,
+    this.organizationId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -42,8 +42,8 @@ class UserModel {
       type: json['type'],
       phone: json['phone'],
       photo: json['photo'],
-      member_id: json['member_id']?.toString(),
-      organization_id: json['organization_id']?.toString(),
+      memberId: json['memberId']?.toString(),
+      organizationId: json['organizationId']?.toString(),
       createdAt: json['createdAt'] ?? DateTime.now().toIso8601String(),
       updatedAt: json['updatedAt'] ?? DateTime.now().toIso8601String(),
     );
@@ -60,8 +60,8 @@ class UserModel {
       'type': type,
       'phone': phone,
       'photo': photo,
-      'member_id': member_id,
-      'organization_id': organization_id,
+      'memberId': memberId,
+      'organizationId': organizationId,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };

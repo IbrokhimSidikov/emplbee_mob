@@ -67,8 +67,8 @@ class UserService {
         'type': configData['type'],
         'phone': configData['phone'],
         'photo': configData['photo'] ?? auth0Data['picture'],
-        'member_id': configData['member_id']?.toString(),
-        'organization_id': configData['organization_id']?.toString(),
+        'memberId': configData['memberId']?.toString(),
+        'organizationId': configData['organizationId']?.toString(),
         'createdAt': DateTime.now().toIso8601String(),
         'updatedAt': DateTime.now().toIso8601String(),
       };
@@ -89,6 +89,36 @@ class UserService {
         return UserModel.fromJson(json.decode(cachedData));
       }
       print('Error in getCurrentUser: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getMemberDetails(String memberId) async {
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) {
+        throw Exception('No access token available');
+      }
+
+      final response = await http.get(
+        Uri.parse(
+            'https://app.emplbee.com/api/v1/member/$memberId?expand=photo,team,position,attendances,activeTasks.status'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to get member details: ${response.body}');
+      }
+
+      final memberData = json.decode(response.body);
+      print('UserService: Received member details for ID: $memberId');
+      print('Member details: $memberData');
+      return memberData;
+    } catch (e) {
+      print('Error in getMemberDetails: $e');
       rethrow;
     }
   }

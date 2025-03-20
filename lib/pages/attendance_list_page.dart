@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
+import '../services/user_service.dart';
+import '../models/attendance_model.dart';
 
 class AttendanceListPage extends StatefulWidget {
   const AttendanceListPage({super.key});
@@ -14,10 +16,12 @@ class AttendanceListPage extends StatefulWidget {
 
 class _AttendanceListPageState extends State<AttendanceListPage>
     with SingleTickerProviderStateMixin {
-  final List<WorkEntry> workEntries = [];
   final _storage = FlutterSecureStorage();
+  final _userService = UserService();
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
+  List<AttendanceModel> _attendances = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -36,7 +40,7 @@ class _AttendanceListPageState extends State<AttendanceListPage>
     ));
 
     _controller.forward();
-    _loadWorkEntries();
+    _loadAttendanceData();
   }
 
   @override
@@ -45,17 +49,45 @@ class _AttendanceListPageState extends State<AttendanceListPage>
     super.dispose();
   }
 
-  Future<void> _loadWorkEntries() async {
-    final entriesJson = await _storage.read(key: 'work_entries');
-    if (entriesJson != null) {
-      final List<dynamic> entries = json.decode(entriesJson);
-      setState(() {
-        workEntries.clear();
-        workEntries.addAll(
-          entries.map((entry) => WorkEntry.fromJson(entry)).toList(),
-        );
-        workEntries.sort((a, b) => b.checkIn.compareTo(a.checkIn));
-      });
+  Future<void> _loadAttendanceData() async {
+    try {
+      setState(() => _isLoading = true);
+
+      // Get current user data using UserService
+      final currentUser = await _userService.getCurrentUser();
+      if (currentUser.memberId == null) {
+        print('No memberId found for current user');
+        return;
+      }
+
+      // Fetch member details including attendance
+      final details =
+          await _userService.getMemberDetails(currentUser.memberId!);
+      print('Fetched member details for ID ${currentUser.memberId}');
+
+      // if (details['attendances'] != null) {
+      //   final attendancesList = details['attendances'] as List;
+      //   final parsedAttendances = attendancesList.map((attendance) {
+      //     final model = AttendanceModel.fromJson(attendance);
+      //     print('Parsed attendance: ${json.encode({
+      //           'date': model.getFormattedDate(),
+      //           'checkIn': model.getFormattedCheckIn(),
+      //           'checkOut': model.getFormattedCheckOut(),
+      //           'duration': model.getFormattedDuration(),
+      //           'status': model.status
+      //         })}');
+      //     return model;
+      //   }).toList();
+
+      //   setState(() {
+      //     _attendances = parsedAttendances;
+      //     _attendances.sort((a, b) => b.checkIn.compareTo(a.checkIn));
+      //   });
+      // }
+    } catch (e) {
+      print('Error loading attendance data: $e');
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -67,8 +99,8 @@ class _AttendanceListPageState extends State<AttendanceListPage>
     return '${hours}h ${minutes}m';
   }
 
-  Widget _buildAttendanceCard(WorkEntry entry) {
-    final bool isToday = entry.checkIn.day == DateTime.now().day;
+  Widget _buildAttendanceCard(AttendanceModel attendance) {
+    final bool isToday = attendance.checkIn.day == DateTime.now().day;
     return Card(
       elevation: isToday ? 2 : 1,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -110,7 +142,7 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        DateFormat('dd MMM yyyy').format(entry.checkIn),
+                        attendance.getFormattedDate(),
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight:
@@ -124,18 +156,18 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: entry.checkOut != null
+                      color: attendance.checkOut != null
                           ? Colors.green.shade50
                           : Colors.orange.shade50,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      entry.checkOut != null
+                      attendance.checkOut != null
                           ? AppLocalizations.of(context).completed
                           : AppLocalizations.of(context).inProgress,
                       style: GoogleFonts.poppins(
                         fontSize: 12,
-                        color: entry.checkOut != null
+                        color: attendance.checkOut != null
                             ? Colors.green.shade700
                             : Colors.orange.shade700,
                         fontWeight: FontWeight.w500,
@@ -150,7 +182,7 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                 children: [
                   _buildTimeInfo(
                     AppLocalizations.of(context).checkIn,
-                    DateFormat('HH:mm').format(entry.checkIn),
+                    attendance.getFormattedCheckIn(),
                     Icons.login,
                     Colors.green,
                   ),
@@ -161,8 +193,8 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                   ),
                   _buildTimeInfo(
                     AppLocalizations.of(context).checkOut,
-                    entry.checkOut != null
-                        ? DateFormat('HH:mm').format(entry.checkOut!)
+                    attendance.checkOut != null
+                        ? attendance.getFormattedCheckOut()
                         : '-',
                     Icons.logout,
                     Colors.red,
@@ -174,7 +206,7 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                   ),
                   _buildTimeInfo(
                     AppLocalizations.of(context).duration,
-                    _formatDuration(entry.checkIn, entry.checkOut),
+                    _formatDuration(attendance.checkIn, attendance.checkOut),
                     Icons.timer,
                     Colors.blue,
                   ),
@@ -261,7 +293,7 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                     Expanded(
                       child: _buildStatCard(
                         AppLocalizations.of(context).totalHours,
-                        '${workEntries.fold<int>(0, (sum, entry) => sum + (entry.checkOut?.difference(entry.checkIn).inHours ?? 0))}h',
+                        '${_attendances.fold<int>(0, (sum, attendance) => sum + (attendance.checkOut?.difference(attendance.checkIn).inHours ?? 0))}h',
                         Icons.access_time,
                         Colors.blue,
                       ),
@@ -270,7 +302,7 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                     Expanded(
                       child: _buildStatCard(
                         AppLocalizations.of(context).entries,
-                        workEntries.length.toString(),
+                        _attendances.length.toString(),
                         Icons.fact_check,
                         Colors.green,
                       ),
@@ -284,34 +316,39 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                 child: FadeTransition(
                   opacity: _fadeAnimation,
                   child: RefreshIndicator(
-                    onRefresh: _loadWorkEntries,
-                    child: workEntries.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.event_busy,
-                                  size: 64,
-                                  color: Colors.grey[400],
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'No attendance records',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 18,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
+                    onRefresh: _loadAttendanceData,
+                    child: _isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(),
                           )
-                        : ListView.builder(
-                            itemCount: workEntries.length,
-                            itemBuilder: (context, index) {
-                              return _buildAttendanceCard(workEntries[index]);
-                            },
-                          ),
+                        : _attendances.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.event_busy,
+                                      size: 64,
+                                      color: Colors.grey[400],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No attendance records',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 18,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : ListView.builder(
+                                itemCount: _attendances.length,
+                                itemBuilder: (context, index) {
+                                  return _buildAttendanceCard(
+                                      _attendances[index]);
+                                },
+                              ),
                   ),
                 ),
               ),
@@ -364,34 +401,5 @@ class _AttendanceListPageState extends State<AttendanceListPage>
         ],
       ),
     );
-  }
-}
-
-class WorkEntry {
-  final String id;
-  final DateTime checkIn;
-  final DateTime? checkOut;
-
-  WorkEntry({
-    required this.id,
-    required this.checkIn,
-    this.checkOut,
-  });
-
-  factory WorkEntry.fromJson(Map<String, dynamic> json) {
-    return WorkEntry(
-      id: json['id'],
-      checkIn: DateTime.parse(json['checkIn']),
-      checkOut:
-          json['checkOut'] != null ? DateTime.parse(json['checkOut']) : null,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'checkIn': checkIn.toIso8601String(),
-      'checkOut': checkOut?.toIso8601String(),
-    };
   }
 }

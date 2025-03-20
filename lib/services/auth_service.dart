@@ -287,7 +287,7 @@ class AuthService {
           'position': apiData['position'] ?? null,
           'phone': apiData['phone'] ?? null,
           'photo': apiData['photo'] ?? null,
-          'member_id': configData?['member_id'],
+          'memberId': configData?['memberId'],
           'createdAt': DateTime.now().toIso8601String(),
           'updatedAt': DateTime.now().toIso8601String(),
         };
@@ -307,7 +307,7 @@ class AuthService {
           'position': null,
           'phone': null,
           'photo': null,
-          'member_id': configData?['member_id'],
+          'memberId': configData?['memberId'],
           'createdAt': DateTime.now().toIso8601String(),
           'updatedAt': DateTime.now().toIso8601String(),
         };
@@ -328,7 +328,7 @@ class AuthService {
         'position': null,
         'phone': null,
         'photo': null,
-        'member_id': configData?['member_id'],
+        'memberId': configData?['memberId'],
         'createdAt': DateTime.now().toIso8601String(),
         'updatedAt': DateTime.now().toIso8601String(),
       };
