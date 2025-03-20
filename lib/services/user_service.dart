@@ -62,7 +62,8 @@ class UserService {
         'auth_id': auth0Data['sub'],
         'email': auth0Data['email'],
         'username': auth0Data['nickname'] ?? auth0Data['email']?.split('@')[0],
-        'name': configData['name'], // Use name directly from config
+        'name': configData['name'],
+        'code': configData['code'],
         'type': configData['type'],
         'phone': configData['phone'],
         'photo': configData['photo'] ?? auth0Data['picture'],

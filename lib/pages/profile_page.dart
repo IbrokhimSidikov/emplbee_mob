@@ -339,6 +339,14 @@ class _ProfilePageState extends State<ProfilePage>
                         ),
                         const SizedBox(height: 4),
                         Text(
+                          _user?.code ?? '',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
                           _user?.email ?? '',
                           style: GoogleFonts.poppins(
                             fontSize: 14,

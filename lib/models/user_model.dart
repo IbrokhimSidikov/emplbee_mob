@@ -5,6 +5,7 @@ class UserModel {
   final String auth_id;
   final String email;
   final String username;
+  final String? code;
   final String? name;
   final String? type;
   final String? phone;
@@ -20,6 +21,7 @@ class UserModel {
     required this.email,
     required this.username,
     this.name,
+    this.code,
     this.type,
     this.phone,
     this.photo,
@@ -36,6 +38,7 @@ class UserModel {
       email: json['email'] ?? '',
       username: json['username'] ?? '',
       name: json['name'],
+      code: json['code'],
       type: json['type'],
       phone: json['phone'],
       photo: json['photo'],
@@ -53,6 +56,7 @@ class UserModel {
       'email': email,
       'username': username,
       'name': name,
+      'code': code,
       'type': type,
       'phone': phone,
       'photo': photo,
