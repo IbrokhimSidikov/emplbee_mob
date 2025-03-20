@@ -5,7 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import '../services/auth_service.dart';
 import '../models/user_model.dart';
-import '../services/user_service.dart'; // Import UserService
+import '../services/user_service.dart';
+import './attendance_list_page.dart';
+import './tasks.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -438,9 +440,24 @@ class _ProfilePageState extends State<ProfilePage>
                               AppLocalizations.of(context)
                                   .viewAttendanceHistory,
                               Icons.history,
-                              () {
-                                // TODO: Implement attendance history view
-                              },
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const AttendanceListPage(),
+                                ),
+                              ),
+                            ),
+                            const Divider(height: 1),
+                            _buildActionTile(
+                              'Tasks', // TODO: Add to localizations
+                              Icons.task_alt,
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const TasksPage(),
+                                ),
+                              ),
                             ),
                             const Divider(height: 1),
                             _buildActionTile(

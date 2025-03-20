@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/task_model.dart';
+import '../services/user_service.dart';
+import 'package:intl/intl.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class TasksPage extends StatefulWidget {
   const TasksPage({super.key});
@@ -8,35 +12,14 @@ class TasksPage extends StatefulWidget {
   State<TasksPage> createState() => _TasksPageState();
 }
 
-class Task {
-  String title;
-  bool isDone;
-
-  Task({required this.title, this.isDone = false});
-}
-
 class _TasksPageState extends State<TasksPage>
     with SingleTickerProviderStateMixin {
-  List<String> days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  int selectedDayIndex = 0;
+  final _storage = FlutterSecureStorage();
+  final _userService = UserService();
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
-
-  List<List<Task>> tasks = [
-    [
-      Task(title: "Gullaga suv quyib qoyish"),
-      Task(title: "Delever Integratsiya qilish"),
-      Task(title: "Mobile Application Yasash"),
-      Task(title: "Sieves 3chi versiyaga davom etish"),
-      Task(title: "Task 5")
-    ],
-    [Task(title: "Task 3")],
-    [Task(title: "Task 4"), Task(title: "Task 5"), Task(title: "Task 6")],
-    [],
-    [Task(title: "Task 7")],
-    [Task(title: "Task 8"), Task(title: "Task 9")],
-    [Task(title: "Task 10")]
-  ];
+  bool _isLoading = true;
+  List<TaskModel> _tasks = [];
 
   @override
   void initState() {
@@ -55,6 +38,7 @@ class _TasksPageState extends State<TasksPage>
     ));
 
     _controller.forward();
+    _loadTasks();
   }
 
   @override
@@ -63,133 +47,217 @@ class _TasksPageState extends State<TasksPage>
     super.dispose();
   }
 
-  Widget _buildDayCard(int index) {
-    final isSelected = selectedDayIndex == index;
-    final now = DateTime.now();
-    final day = now.subtract(Duration(days: now.weekday - 1 - index));
-    final isToday = day.day == now.day;
+  Future<void> _loadTasks() async {
+    try {
+      setState(() => _isLoading = true);
 
-    return GestureDetector(
-      onTap: () {
+      final currentUser = await _userService.getCurrentUser();
+      if (currentUser.memberId == null) {
+        setState(() => _tasks = []);
+        return;
+      }
+
+      final details =
+          await _userService.getMemberDetails(currentUser.memberId!);
+      final activeTasks = details['activeTasks'] as List?;
+      if (activeTasks != null) {
         setState(() {
-          selectedDayIndex = index;
+          _tasks = activeTasks.map((task) => TaskModel.fromJson(task)).toList();
+          _tasks.sort((a, b) => a.deadline.compareTo(b.deadline));
         });
-      },
+      }
+    } catch (e) {
+      print('Error loading tasks: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Color _getStatusColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'completed':
+        return Colors.green;
+      case 'in_progress':
+        return Colors.blue;
+      case 'ordinary':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Widget _buildTaskCard(TaskModel task) {
+    final statusColor = _getStatusColor(task.status.category);
+    final isOverdue = task.isOverdue();
+
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
       child: Container(
-        width: 80,
-        margin: const EdgeInsets.symmetric(horizontal: 6),
         decoration: BoxDecoration(
-          gradient: isSelected
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Colors.blue.shade400, Colors.blue.shade600],
-                )
-              : null,
-          color: isSelected ? null : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: isSelected
-                  ? Colors.blue.withOpacity(0.3)
-                  : Colors.grey.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(
+            color: statusColor,
+            width: 1,
+          ),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              days[index],
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? Colors.white : Colors.grey[600],
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.task_alt,
+                          size: 20,
+                          color: statusColor,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            task.name,
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            task.code,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      task.status.name.toUpperCase(),
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: statusColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              day.day.toString(),
-              style: GoogleFonts.poppins(
-                fontSize: 20,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                color: isSelected ? Colors.white : Colors.black87,
-              ),
-            ),
-            if (isToday)
-              Container(
-                margin: const EdgeInsets.only(top: 4),
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isSelected ? Colors.white : Colors.blue,
+              if (task.description != null && task.description!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  task.description!,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
+              ],
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildTimeInfo(
+                    'Start',
+                    task.getFormattedStartDate(),
+                    Icons.play_circle_outline,
+                    Colors.blue,
+                  ),
+                  Container(
+                    height: 40,
+                    width: 1,
+                    color: Colors.grey.shade200,
+                  ),
+                  _buildTimeInfo(
+                    'Due',
+                    task.getFormattedDeadline(),
+                    Icons.event,
+                    isOverdue ? Colors.red : Colors.orange,
+                    isOverdue ? 'Overdue' : null,
+                  ),
+                ],
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildTaskCard(Task task, int index) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+  Widget _buildTimeInfo(
+    String label,
+    String time,
+    IconData icon,
+    Color color, [
+    String? subtitle,
+  ]) {
+    return Expanded(
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        leading: Container(
-          width: 24,
-          height: 24,
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: task.isDone ? Colors.green : Colors.grey.shade400,
-              width: 2,
+          const SizedBox(height: 4),
+          Text(
+            time,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
             ),
-            borderRadius: BorderRadius.circular(6),
           ),
-          child: task.isDone
-              ? const Icon(
-                  Icons.check,
-                  size: 16,
-                  color: Colors.green,
-                )
-              : null,
-        ),
-        title: Text(
-          task.title,
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            decoration: task.isDone ? TextDecoration.lineThrough : null,
-            color: task.isDone ? Colors.grey : Colors.black87,
-          ),
-        ),
-        trailing: IconButton(
-          icon: Icon(
-            Icons.more_vert,
-            color: Colors.grey[400],
-          ),
-          onPressed: () {
-            // Show task options
-          },
-        ),
-        onTap: () {
-          setState(() {
-            task.isDone = !task.isDone;
-          });
-        },
+          if (subtitle != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                color: color,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -230,143 +298,50 @@ class _TasksPageState extends State<TasksPage>
                         color: Colors.black87,
                       ),
                     ),
-                    const Spacer(),
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundImage: const AssetImage('images/ava.png'),
-                      backgroundColor: Colors.transparent,
-                    ),
                   ],
                 ),
               ),
-
-              // Task Summary
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        'Total Tasks',
-                        tasks[selectedDayIndex].length.toString(),
-                        Icons.assignment,
-                        Colors.blue,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildStatCard(
-                        'Completed',
-                        tasks[selectedDayIndex]
-                            .where((task) => task.isDone)
-                            .length
-                            .toString(),
-                        Icons.check_circle,
-                        Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Days List
-              Container(
-                height: 100,
-                margin: const EdgeInsets.symmetric(vertical: 16),
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: days.length,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  itemBuilder: (context, index) => _buildDayCard(index),
-                ),
-              ),
-
-              // Tasks List
               Expanded(
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: tasks[selectedDayIndex].isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.task,
-                                size: 64,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No tasks for today',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 18,
-                                  color: Colors.grey[600],
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : RefreshIndicator(
+                        onRefresh: _loadTasks,
+                        child: _tasks.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.task_alt,
+                                      size: 64,
+                                      color: Colors.grey.shade400,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No tasks found',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : FadeTransition(
+                                opacity: _fadeAnimation,
+                                child: ListView.builder(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8),
+                                  itemCount: _tasks.length,
+                                  itemBuilder: (context, index) =>
+                                      _buildTaskCard(_tasks[index]),
                                 ),
                               ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: tasks[selectedDayIndex].length,
-                          itemBuilder: (context, index) => _buildTaskCard(
-                              tasks[selectedDayIndex][index], index),
-                        ),
-                ),
+                      ),
               ),
             ],
           ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Add new task
-        },
-        backgroundColor: Colors.blue,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-    );
-  }
-
-  Widget _buildStatCard(
-      String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
-              ),
-              Text(
-                value,
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
