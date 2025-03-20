@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import '../services/auth_service.dart';
 import '../models/user_model.dart';
+import '../services/user_service.dart'; // Import UserService
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -26,6 +27,7 @@ class _ProfilePageState extends State<ProfilePage>
   bool isOnline = false;
   final _storage = FlutterSecureStorage();
   final _authService = AuthService();
+  final _userService = UserService(); // Initialize UserService
 
   @override
   void initState() {
@@ -51,14 +53,26 @@ class _ProfilePageState extends State<ProfilePage>
 
   Future<void> _loadUserProfile() async {
     try {
-      final userJson = await _storage.read(key: 'user_profile');
-      if (userJson != null) {
-        setState(() {
-          _user = UserModel.fromJson(json.decode(userJson));
-        });
-      }
+      // Get user data from UserService which prioritizes configdata
+      final user = await _userService.getCurrentUser();
+      print(
+          'ProfilePage: Loaded user data - name: ${user.name}, username: ${user.username}');
+
+      setState(() {
+        _user = user;
+      });
     } catch (e) {
       print('Error loading user profile: $e');
+      // Fallback to cached data
+      final userJson = await _storage.read(key: 'user_profile');
+      if (userJson != null) {
+        final cachedUser = UserModel.fromJson(json.decode(userJson));
+        print(
+            'ProfilePage: Using cached user data - name: ${cachedUser.name}, username: ${cachedUser.username}');
+        setState(() {
+          _user = cachedUser;
+        });
+      }
     }
   }
 
@@ -306,6 +320,7 @@ class _ProfilePageState extends State<ProfilePage>
                           ],
                         ),
                         const SizedBox(height: 16),
+                        // Display name from configdata, fallback to username if not available
                         Text(
                           _user?.name ?? _user?.username ?? 'Loading...',
                           style: GoogleFonts.poppins(
@@ -316,7 +331,7 @@ class _ProfilePageState extends State<ProfilePage>
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          _user?.position ?? 'Employee',
+                          _user?.type ?? 'Ishchi',
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             color: Colors.grey[600],

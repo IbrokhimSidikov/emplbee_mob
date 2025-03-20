@@ -6,7 +6,7 @@ class UserModel {
   final String email;
   final String username;
   final String? name;
-  final String? position;
+  final String? type;
   final String? phone;
   final String? photo;
   final String? member_id;
@@ -20,7 +20,7 @@ class UserModel {
     required this.email,
     required this.username,
     this.name,
-    this.position,
+    this.type,
     this.phone,
     this.photo,
     this.member_id,
@@ -36,7 +36,7 @@ class UserModel {
       email: json['email'] ?? '',
       username: json['username'] ?? '',
       name: json['name'],
-      position: json['position'],
+      type: json['type'],
       phone: json['phone'],
       photo: json['photo'],
       member_id: json['member_id']?.toString(),
@@ -53,7 +53,7 @@ class UserModel {
       'email': email,
       'username': username,
       'name': name,
-      'position': position,
+      'type': type,
       'phone': phone,
       'photo': photo,
       'member_id': member_id,
