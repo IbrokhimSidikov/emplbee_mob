@@ -20,6 +20,7 @@ class _TasksPageState extends State<TasksPage>
   late Animation<double> _fadeAnimation;
   bool _isLoading = true;
   List<TaskModel> _tasks = [];
+  Set<String> _expandedCards = {}; // Track expanded cards by task ID
 
   @override
   void initState() {
@@ -82,13 +83,14 @@ class _TasksPageState extends State<TasksPage>
       case 'ordinary':
         return Colors.orange;
       default:
-        return Colors.grey;
+        return const Color.fromARGB(255, 126, 126, 126);
     }
   }
 
   Widget _buildTaskCard(TaskModel task) {
     final statusColor = _getStatusColor(task.status.category);
     final isOverdue = task.isOverdue();
+    final isExpanded = _expandedCards.contains(task.id);
 
     return Card(
       elevation: 2,
@@ -99,113 +101,361 @@ class _TasksPageState extends State<TasksPage>
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(
-            color: statusColor,
-            width: 1,
+          border: Border(
+            left: BorderSide(
+              color: statusColor,
+              width: 4,
+            ),
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.task_alt,
-                          size: 20,
-                          color: statusColor,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              if (isExpanded) {
+                _expandedCards.remove(task.id);
+              } else {
+                _expandedCards.add(task.id);
+              }
+            });
+          },
+          borderRadius: BorderRadius.circular(15),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Row(
                         children: [
-                          Text(
-                            task.name,
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: statusColor.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.task_alt,
+                              size: 20,
+                              color: statusColor,
                             ),
                           ),
-                          Text(
-                            task.code,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: Colors.grey[600],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  task.name,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                Text(
+                                  task.code,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    color:
+                                        const Color.fromARGB(255, 37, 134, 237),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
+                    ),
+                    IconButton(
+                      icon: AnimatedRotation(
+                        turns: isExpanded ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 200),
+                        child: const Icon(Icons.keyboard_arrow_down),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          if (isExpanded) {
+                            _expandedCards.remove(task.id);
+                          } else {
+                            _expandedCards.add(task.id);
+                          }
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildTimeInfo(
+                      'Start',
+                      task.getFormattedStartDate(),
+                      Icons.play_circle_outline,
+                      Colors.blue,
+                    ),
+                    Container(
+                      height: 40,
+                      width: 1,
+                      color: Colors.grey.shade200,
+                    ),
+                    _buildTimeInfo(
+                      'Due',
+                      task.getFormattedDeadline(),
+                      Icons.event,
+                      isOverdue ? Colors.red : Colors.orange,
+                      isOverdue ? 'Overdue' : null,
+                    ),
+                  ],
+                ),
+                // Expanded drop down content
+                if (isExpanded) ...[
+                  const Divider(height: 24),
+                  Row(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.radio_button_checked,
+                                size: 16,
+                                color: const Color.fromARGB(255, 37, 134, 237),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Status:',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color:
+                                      const Color.fromARGB(255, 37, 134, 237),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: statusColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: statusColor.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              task.status.name.toUpperCase(),
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: statusColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 12),
+                      // TAGS
+                      if (task.tags.isNotEmpty)
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.local_offer_outlined,
+                                    size: 16,
+                                    color:
+                                        const Color.fromARGB(255, 37, 134, 237),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Tags:',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color.fromARGB(
+                                          255, 37, 134, 237),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: task.tags
+                                      .map((tag) => Padding(
+                                            padding:
+                                                const EdgeInsets.only(right: 8),
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 6,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.blue[50],
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: Colors.blue[200]!,
+                                                  width: 1,
+                                                ),
+                                              ),
+                                              child: Text(
+                                                tag.name,
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 13,
+                                                  color: Colors.blue[700],
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ),
+                                          ))
+                                      .toList(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                  const SizedBox(height: 16),
+                  // DESCRIPTION
+                  if (task.description != null &&
+                      task.description!.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.description_outlined,
+                              size: 16,
+                              color: const Color.fromARGB(255, 37, 134, 237),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Description:',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: const Color.fromARGB(255, 37, 134, 237),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      task.status.name.toUpperCase(),
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: statusColor,
-                        fontWeight: FontWeight.w500,
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.grey[200]!,
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        task.description!,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: Colors.grey[800],
+                          height: 1.5,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
+                  if (task.subtasks.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.checklist_rounded,
+                          size: 16,
+                          color: const Color.fromARGB(255, 37, 134, 237),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Subtasks',
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: const Color.fromARGB(255, 37, 134, 237),
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '${task.subtasks.where((st) => st.completed).length}/${task.subtasks.length}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ...task.subtasks
+                        .map((subtask) => Padding(
+                              padding:
+                                  const EdgeInsets.only(left: 8, bottom: 12),
+                              child: Row(
+                                children: [
+                                  SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: Checkbox(
+                                      value: subtask.completed,
+                                      onChanged: (bool? value) {
+                                        // TODO: Implement subtask update
+                                        // This should call your backend API to update the subtask status
+                                      },
+                                      activeColor: const Color.fromARGB(
+                                          255, 37, 134, 237),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      subtask.label,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        color: Colors.black87,
+                                        decoration: subtask.completed
+                                            ? TextDecoration.lineThrough
+                                            : null,
+                                        decorationColor: Colors.grey,
+                                        decorationThickness: 2,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ))
+                        .toList(),
+                  ],
                 ],
-              ),
-              if (task.description != null && task.description!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(
-                  task.description!,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
               ],
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildTimeInfo(
-                    'Start',
-                    task.getFormattedStartDate(),
-                    Icons.play_circle_outline,
-                    Colors.blue,
-                  ),
-                  Container(
-                    height: 40,
-                    width: 1,
-                    color: Colors.grey.shade200,
-                  ),
-                  _buildTimeInfo(
-                    'Due',
-                    task.getFormattedDeadline(),
-                    Icons.event,
-                    isOverdue ? Colors.red : Colors.orange,
-                    isOverdue ? 'Overdue' : null,
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
       ),

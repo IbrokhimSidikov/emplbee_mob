@@ -15,6 +15,8 @@ class TaskModel {
   final String statusId;
   final int position;
   final TaskStatus status;
+  final List<SubTask> subtasks;
+  final List<TagModel> tags;
 
   TaskModel({
     required this.id,
@@ -31,6 +33,8 @@ class TaskModel {
     required this.statusId,
     required this.position,
     required this.status,
+    this.subtasks = const [],
+    this.tags = const [],
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
@@ -49,6 +53,14 @@ class TaskModel {
       statusId: json['statusId'] ?? '',
       position: json['position'] ?? 0,
       status: TaskStatus.fromJson(json['status'] ?? {}),
+      subtasks: (json['subTasks'] as List<dynamic>?)
+              ?.map((subtask) => SubTask.fromJson(subtask))
+              .toList() ??
+          [],
+      tags: (json['tags'] as List<dynamic>?)
+              ?.map((tag) => TagModel.fromJson(tag))
+              .toList() ??
+          [],
     );
   }
 
@@ -91,6 +103,47 @@ class TaskStatus {
       position: json['position'] ?? 0,
       createdAt:
           DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+    );
+  }
+}
+
+class SubTask {
+  final String label;
+  final bool completed;
+
+  SubTask({
+    required this.label,
+    required this.completed,
+  });
+
+  factory SubTask.fromJson(Map<String, dynamic> json) {
+    return SubTask(
+      label: json['label'] ?? '',
+      completed: json['completed'] ?? false,
+    );
+  }
+}
+
+class TagModel {
+  final String id;
+  final String name;
+  final DateTime createdAt;
+  final String? type;
+
+  TagModel({
+    required this.id,
+    required this.name,
+    required this.createdAt,
+    this.type,
+  });
+
+  factory TagModel.fromJson(Map<String, dynamic> json) {
+    return TagModel(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      createdAt:
+          DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      type: json['type'],
     );
   }
 }
