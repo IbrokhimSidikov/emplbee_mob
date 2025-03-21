@@ -367,8 +367,31 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                   child: RefreshIndicator(
                     onRefresh: _loadAttendanceData,
                     child: _isLoading
-                        ? const Center(
-                            child: CircularProgressIndicator(),
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 50,
+                                  height: 50,
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      const Color.fromARGB(255, 37, 134, 237),
+                                    ),
+                                    strokeWidth: 3,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Loading attendance...',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
                           )
                         : _attendances.isEmpty
                             ? Center(
