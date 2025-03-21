@@ -450,7 +450,7 @@ class _ProfilePageState extends State<ProfilePage>
                             ),
                             const Divider(height: 1),
                             _buildActionTile(
-                              'Tasks', // TODO: Add to localizations
+                              AppLocalizations.of(context).myTasks,
                               Icons.task_alt,
                               () => Navigator.push(
                                 context,

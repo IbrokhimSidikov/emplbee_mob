@@ -1,3 +1,4 @@
+import 'package:emplbee_mob/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/task_model.dart';
@@ -246,7 +247,7 @@ class _TasksPageState extends State<TasksPage>
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                'Status:',
+                                AppLocalizations.of(context).status,
                                 style: GoogleFonts.poppins(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
@@ -298,7 +299,7 @@ class _TasksPageState extends State<TasksPage>
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    'Tags:',
+                                    AppLocalizations.of(context).tags,
                                     style: GoogleFonts.poppins(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
@@ -366,7 +367,7 @@ class _TasksPageState extends State<TasksPage>
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'Description:',
+                              AppLocalizations.of(context).description,
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -410,7 +411,7 @@ class _TasksPageState extends State<TasksPage>
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Subtasks',
+                          AppLocalizations.of(context).subtasks,
                           style: GoogleFonts.poppins(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -442,7 +443,6 @@ class _TasksPageState extends State<TasksPage>
                                       value: subtask.completed,
                                       onChanged: (bool? value) {
                                         // TODO: Implement subtask update
-                                        // This should call your backend API to update the subtask status
                                       },
                                       activeColor: const Color.fromARGB(
                                           255, 37, 134, 237),
@@ -559,7 +559,7 @@ class _TasksPageState extends State<TasksPage>
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'My Tasks',
+                      AppLocalizations.of(context).myTasks,
                       style: GoogleFonts.poppins(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -587,7 +587,7 @@ class _TasksPageState extends State<TasksPage>
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'Loading tasks...',
+                              AppLocalizations.of(context).loadingTasks,
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 color: Colors.grey[600],

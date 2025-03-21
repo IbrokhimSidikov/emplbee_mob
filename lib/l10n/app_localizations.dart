@@ -53,6 +53,20 @@ class AppLocalizations {
       'checkOutTitle': 'Check Out',
       'faceIddescription': 'Please position your face within the frame',
       'verifying': 'Verifying',
+      'loadingAttendance': 'Loading Attendance',
+
+      // Tasks
+      'loadingTasks': 'Loading Tasks',
+      'subtasks': 'Subtasks',
+      'description': 'Description',
+      'start': 'Start',
+      'end': 'End',
+      'status': 'Status',
+      'tags': 'Tags',
+      'myTasks': 'My Tasks',
+
+      // Notifications
+      'markAllAsRead': 'Mark all as read',
     },
     'uz': {
       'whatsNew': 'YANGILIKLAR',
@@ -97,6 +111,20 @@ class AppLocalizations {
       'checkOutTitle': 'Ish yakunlash',
       'faceIddescription': 'Yuzingizni belgilangan hududga moslang',
       'verifying': 'Tasdiqlanmoqda',
+      'loadingAttendance': 'Keldi-ketdi yuklanmoqda',
+
+      // Tasks
+      'loadingTasks': 'Vazifalar yuklanmoqda',
+      'subtasks': 'Qo\'shimcha vazifalar',
+      'description': 'Tasvir',
+      'start': 'Boshlanish',
+      'end': 'Yakunlash',
+      'status': 'Status',
+      'tags': 'Teglar',
+      'myTasks': 'Mening vazifalarim',
+
+      // Notifications
+      'markAllAsRead': 'Hammasini o\'qish',
     }
   };
   String get whatsNew => _localizedValues[locale.languageCode]!['whatsNew']!;
@@ -161,4 +189,22 @@ class AppLocalizations {
   String get faceIddescription =>
       _localizedValues[locale.languageCode]!['faceIddescription']!;
   String get verifying => _localizedValues[locale.languageCode]!['verifying']!;
+  String get loadingAttendance =>
+      _localizedValues[locale.languageCode]!['loadingAttendance']!;
+
+  // Tasks
+  String get loadingTasks =>
+      _localizedValues[locale.languageCode]!['loadingTasks']!;
+  String get subtasks => _localizedValues[locale.languageCode]!['subtasks']!;
+  String get description =>
+      _localizedValues[locale.languageCode]!['description']!;
+  String get start => _localizedValues[locale.languageCode]!['start']!;
+  String get end => _localizedValues[locale.languageCode]!['end']!;
+  String get status => _localizedValues[locale.languageCode]!['status']!;
+  String get tags => _localizedValues[locale.languageCode]!['tags']!;
+  String get myTasks => _localizedValues[locale.languageCode]!['myTasks']!;
+
+  // Notifications
+  String get markAllAsRead =>
+      _localizedValues[locale.languageCode]!['markAllAsRead']!;
 }

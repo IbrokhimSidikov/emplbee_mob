@@ -1,3 +1,4 @@
+import 'package:emplbee_mob/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -104,7 +105,7 @@ class _NotificationsPageState extends State<NotificationsPage>
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Notifications',
+                      AppLocalizations.of(context).notifications,
                       style: GoogleFonts.poppins(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -115,7 +116,7 @@ class _NotificationsPageState extends State<NotificationsPage>
                     if (notifications.isNotEmpty)
                       TextButton.icon(
                         icon: const Icon(Icons.done_all),
-                        label: const Text('Mark all as read'),
+                        label: Text(AppLocalizations.of(context).markAllAsRead),
                         onPressed: () {
                           setState(() {
                             for (var notification in notifications) {
@@ -205,46 +206,72 @@ class NotificationTile extends StatelessWidget {
     return Card(
       elevation: notification.isRead ? 0 : 2,
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: notification.isRead
-              ? Colors.grey.withOpacity(0.2)
-              : notification.type.color.withOpacity(0.2),
-          child: Icon(
-            notification.type.icon,
-            color: notification.isRead ? Colors.grey : notification.type.color,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              Colors.blue.shade50.withOpacity(0.3),
+              Colors.blue.shade50.withOpacity(0.5),
+            ],
+          ),
+          border: Border(
+            left: BorderSide(
+              color:
+                  notification.isRead ? Colors.grey : notification.type.color,
+              width: 4,
+            ),
           ),
         ),
-        title: Text(
-          notification.title,
-          style: GoogleFonts.poppins(
-            fontWeight:
-                notification.isRead ? FontWeight.normal : FontWeight.bold,
+        child: ListTile(
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          leading: CircleAvatar(
+            backgroundColor: notification.isRead
+                ? Colors.grey.withOpacity(0.2)
+                : notification.type.color.withOpacity(0.2),
+            child: Icon(
+              notification.type.icon,
+              color:
+                  notification.isRead ? Colors.grey : notification.type.color,
+            ),
           ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              notification.message,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: Colors.black87,
-              ),
+          title: Text(
+            notification.title,
+            style: GoogleFonts.poppins(
+              fontWeight:
+                  notification.isRead ? FontWeight.normal : FontWeight.bold,
             ),
-            const SizedBox(height: 4),
-            Text(
-              _formatTime(notification.time),
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color: Colors.grey[600],
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 4),
+              Text(
+                notification.message,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                _formatTime(notification.time),
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+          onTap: onTap,
         ),
-        onTap: onTap,
       ),
     );
   }

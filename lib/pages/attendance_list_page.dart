@@ -383,7 +383,8 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
-                                  'Loading attendance...',
+                                  AppLocalizations.of(context)
+                                      .loadingAttendance,
                                   style: GoogleFonts.poppins(
                                     fontSize: 14,
                                     color: Colors.grey[600],
