@@ -1,6 +1,7 @@
 import 'package:emplbee_mob/api/firebase_api.dart';
 import 'package:emplbee_mob/firebase_options.dart';
 import 'package:emplbee_mob/pages/home_page.dart';
+import 'package:emplbee_mob/pages/notification_test_page.dart';
 import 'package:emplbee_mob/pages/onboard_page.dart';
 import 'package:emplbee_mob/pages/profile_page.dart';
 import 'package:emplbee_mob/pages/tasks.dart';
@@ -62,6 +63,7 @@ class MyApp extends StatelessWidget {
         '/attendancepage': (context) => AttendanceScreen(),
         '/taskspage': (context) => const TasksPage(),
         '/notificationspage': (context) => const NotificationsPage(),
+        '/notificationtestpage': (context) => const NotificationTestPage(),
       },
     );
   }
