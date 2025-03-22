@@ -133,18 +133,78 @@ class _HomePageState extends State<HomePage>
                         Row(
                           children: [
                             // Language Switcher
-                            IconButton(
+                            PopupMenuButton<String>(
                               icon: const Icon(Icons.language, size: 28),
-                              onPressed: () {
+                              tooltip: 'Language',
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              position: PopupMenuPosition.under,
+                              elevation: 3,
+                              color: Colors.white,
+                              onSelected: (String languageCode) {
                                 final provider = Provider.of<LocaleProvider>(
                                     context,
                                     listen: false);
-                                final currentLocale = provider.locale;
-                                if (currentLocale.languageCode == 'en') {
-                                  provider.setLocale(const Locale('uz'));
-                                } else {
-                                  provider.setLocale(const Locale('en'));
-                                }
+                                provider.setLocale(Locale(languageCode));
+                              },
+                              itemBuilder: (BuildContext context) {
+                                final provider = Provider.of<LocaleProvider>(
+                                    context,
+                                    listen: false);
+                                return provider.supportedLanguages.entries
+                                    .map((entry) => PopupMenuItem<String>(
+                                          value: entry.key,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 4),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                if (provider
+                                                        .locale.languageCode ==
+                                                    entry.key)
+                                                  Container(
+                                                    padding:
+                                                        const EdgeInsets.all(4),
+                                                    decoration: BoxDecoration(
+                                                      color:
+                                                          Colors.blue.shade50,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              4),
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons.check,
+                                                      size: 16,
+                                                      color: Colors.blue,
+                                                    ),
+                                                  ),
+                                                if (provider
+                                                        .locale.languageCode ==
+                                                    entry.key)
+                                                  const SizedBox(width: 8),
+                                                Text(
+                                                  entry.value,
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: 14,
+                                                    color: provider.locale
+                                                                .languageCode ==
+                                                            entry.key
+                                                        ? Colors.blue
+                                                        : Colors.black87,
+                                                    fontWeight: provider.locale
+                                                                .languageCode ==
+                                                            entry.key
+                                                        ? FontWeight.w600
+                                                        : FontWeight.normal,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ))
+                                    .toList();
                               },
                             ),
                             // Notification Icon
