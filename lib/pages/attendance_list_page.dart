@@ -22,6 +22,12 @@ class _AttendanceListPageState extends State<AttendanceListPage>
   late Animation<double> _fadeAnimation;
   List<AttendanceModel> _attendances = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  String? _memberId;
+  int _currentPage = 1;
+  final int _pageSize = 10;
+  bool _hasMoreData = true;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -40,18 +46,60 @@ class _AttendanceListPageState extends State<AttendanceListPage>
     ));
 
     _controller.forward();
+
+    // Setup scroll listener for pagination
+    _scrollController.addListener(_scrollListener);
+
+    // Load cached data first, then fetch fresh data
+    _loadCachedData();
     _loadAttendanceData();
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
     _controller.dispose();
     super.dispose();
   }
 
-  Future<void> _loadAttendanceData() async {
+  void _scrollListener() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_isLoadingMore &&
+        _hasMoreData) {
+      _loadMoreAttendanceData();
+    }
+  }
+
+  Future<void> _loadCachedData() async {
     try {
-      setState(() => _isLoading = true);
+      final cachedData = await _storage.read(key: 'attendance_data');
+      if (cachedData != null) {
+        final List<dynamic> decodedData = json.decode(cachedData);
+        final parsedAttendances = decodedData.map((attendance) {
+          return AttendanceModel.fromJson(attendance);
+        }).toList();
+
+        setState(() {
+          _attendances = parsedAttendances;
+          _attendances.sort((a, b) => b.checkIn.compareTo(a.checkIn));
+        });
+      }
+    } catch (e) {
+      print('Error loading cached attendance data: $e');
+    }
+  }
+
+  Future<void> _loadAttendanceData() async {
+    if (_isLoading) return;
+
+    try {
+      setState(() {
+        _isLoading = true;
+        _currentPage = 1;
+        _hasMoreData = true;
+      });
 
       // Get current user data using UserService
       final currentUser = await _userService.getCurrentUser();
@@ -60,21 +108,20 @@ class _AttendanceListPageState extends State<AttendanceListPage>
         return;
       }
 
-      // Fetch member details including attendance
-      final details =
-          await _userService.getMemberDetails(currentUser.memberId!);
-      print('Fetched member details for ID ${currentUser.memberId}');
+      _memberId = currentUser.memberId;
 
-      final attendances = details['attendances'] as List?;
-      if (attendances != null && attendances.isNotEmpty) {
-        final parsedAttendances = attendances.map((attendance) {
-          return AttendanceModel.fromJson(attendance);
-        }).toList();
+      // Fetch paginated attendance data
+      final attendances =
+          await _fetchAttendanceData(_memberId!, _currentPage, _pageSize);
 
+      if (attendances.isNotEmpty) {
         setState(() {
-          _attendances = parsedAttendances;
-          _attendances.sort((a, b) => b.checkIn.compareTo(a.checkIn));
+          _attendances = attendances;
+          _hasMoreData = attendances.length >= _pageSize;
         });
+
+        // Cache the data
+        _cacheAttendanceData(attendances);
       } else {
         print('No attendance records found');
         setState(() => _attendances = []);
@@ -83,6 +130,73 @@ class _AttendanceListPageState extends State<AttendanceListPage>
       print('Error loading attendance data: $e');
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadMoreAttendanceData() async {
+    if (_isLoadingMore || !_hasMoreData || _memberId == null) return;
+
+    try {
+      setState(() {
+        _isLoadingMore = true;
+        _currentPage++;
+      });
+
+      final newAttendances =
+          await _fetchAttendanceData(_memberId!, _currentPage, _pageSize);
+
+      if (newAttendances.isNotEmpty) {
+        setState(() {
+          _attendances.addAll(newAttendances);
+          _hasMoreData = newAttendances.length >= _pageSize;
+        });
+
+        // Update cache with all data
+        _cacheAttendanceData(_attendances);
+      } else {
+        setState(() => _hasMoreData = false);
+      }
+    } catch (e) {
+      print('Error loading more attendance data: $e');
+      // Revert page count on error
+      setState(() => _currentPage--);
+    } finally {
+      setState(() => _isLoadingMore = false);
+    }
+  }
+
+  Future<List<AttendanceModel>> _fetchAttendanceData(
+      String memberId, int page, int pageSize) async {
+    try {
+      // Fetch member details with pagination parameters
+      final details =
+          await _userService.getMemberAttendances(memberId, page, pageSize);
+
+      final attendances = details['attendances'] as List?;
+      if (attendances != null && attendances.isNotEmpty) {
+        final parsedAttendances = attendances.map((attendance) {
+          return AttendanceModel.fromJson(attendance);
+        }).toList();
+
+        // Sort by check-in date
+        parsedAttendances.sort((a, b) => b.checkIn.compareTo(a.checkIn));
+        return parsedAttendances;
+      }
+    } catch (e) {
+      print('Error fetching attendance data: $e');
+    }
+    return [];
+  }
+
+  Future<void> _cacheAttendanceData(List<AttendanceModel> attendances) async {
+    try {
+      final jsonData = attendances.map((a) => a.toJson()).toList();
+      await _storage.write(
+        key: 'attendance_data',
+        value: json.encode(jsonData),
+      );
+    } catch (e) {
+      print('Error caching attendance data: $e');
     }
   }
 
@@ -297,135 +411,169 @@ class _AttendanceListPageState extends State<AttendanceListPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.blue.shade50,
-              Colors.white,
-              Colors.blue.shade50,
-            ],
+      appBar: AppBar(
+        title: Text(
+          AppLocalizations.of(context).attendanceHistory,
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Custom App Bar
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.black87),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      AppLocalizations.of(context).attendanceHistory,
-                      style: GoogleFonts.poppins(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _isLoading ? null : _loadAttendanceData,
+            tooltip: AppLocalizations.of(context).refresh,
+          ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _loadAttendanceData,
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Container(
+            color: Colors.grey[100],
+            child: Column(
+              children: [
+                // Stats section
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 5,
+                        offset: const Offset(0, 3),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Stats Summary
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        AppLocalizations.of(context).totalHours,
-                        '${_attendances.fold<int>(0, (sum, attendance) => sum + (attendance.checkOut?.difference(attendance.checkIn).inHours ?? 0))}h',
-                        Icons.access_time,
-                        Colors.blue,
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context).attendanceStats,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildStatCard(
-                        AppLocalizations.of(context).entries,
-                        _attendances.length.toString(),
-                        Icons.fact_check,
-                        Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Entries List
-              Expanded(
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: RefreshIndicator(
-                    onRefresh: _loadAttendanceData,
-                    child: _isLoading
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                  width: 50,
-                                  height: 50,
-                                  child: CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      const Color.fromARGB(255, 37, 134, 237),
-                                    ),
-                                    strokeWidth: 3,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  AppLocalizations.of(context)
-                                      .loadingAttendance,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                              AppLocalizations.of(context).onTime,
+                              _attendances
+                                  .where((a) =>
+                                      a.checkInStatus.toLowerCase() == 'ontime')
+                                  .length
+                                  .toString(),
+                              Icons.check_circle,
+                              Colors.green,
                             ),
-                          )
-                        : _attendances.isEmpty
-                            ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.event_busy,
-                                      size: 64,
-                                      color: Colors.grey[400],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'No attendance records',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 18,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : ListView.builder(
-                                itemCount: _attendances.length,
-                                itemBuilder: (context, index) {
-                                  return _buildAttendanceCard(
-                                      _attendances[index]);
-                                },
-                              ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildStatCard(
+                              AppLocalizations.of(context).late,
+                              _attendances
+                                  .where((a) =>
+                                      a.checkInStatus.toLowerCase() == 'late')
+                                  .length
+                                  .toString(),
+                              Icons.warning,
+                              Colors.orange,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
+                // Attendance list
+                Expanded(
+                  child: _isLoading && _attendances.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 50,
+                                height: 50,
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    const Color.fromARGB(255, 37, 134, 237),
+                                  ),
+                                  strokeWidth: 3,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                AppLocalizations.of(context).loadingAttendance,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _attendances.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.event_busy,
+                                    size: 64,
+                                    color: Colors.grey[400],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No attendance records',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 18,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              controller: _scrollController,
+                              itemCount:
+                                  _attendances.length + (_hasMoreData ? 1 : 0),
+                              itemBuilder: (context, index) {
+                                if (index == _attendances.length) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Center(
+                                      child: SizedBox(
+                                        width: 32,
+                                        height: 32,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                            const Color.fromARGB(
+                                                255, 37, 134, 237),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }
+                                return _buildAttendanceCard(
+                                    _attendances[index]);
+                              },
+                            ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

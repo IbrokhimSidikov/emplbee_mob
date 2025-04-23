@@ -122,4 +122,35 @@ class UserService {
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>> getMemberAttendances(
+      String memberId, int page, int pageSize) async {
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) {
+        throw Exception('No access token available');
+      }
+
+      final response = await http.get(
+        Uri.parse(
+            'https://app.emplbee.com/api/v1/member/$memberId/attendances?page=$page&per_page=$pageSize'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to get member attendances: ${response.body}');
+      }
+
+      final attendanceData = json.decode(response.body);
+      print(
+          'UserService: Received attendance data for member ID: $memberId, page: $page');
+      return {'attendances': attendanceData['data'] ?? []};
+    } catch (e) {
+      print('Error in getMemberAttendances: $e');
+      rethrow;
+    }
+  }
 }

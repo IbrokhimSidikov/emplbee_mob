@@ -47,6 +47,10 @@ class AppLocalizations {
       'inProgress': 'In Progress',
       'completed': 'Completed',
       'duration': 'Duration',
+      'attendanceStats': 'Attendance Stats',
+      'onTime': 'On Time',
+      'late': 'Late',
+      'refresh': 'Refresh',
 
       // Attendance
       'checkInTitle': 'Check In',
@@ -105,6 +109,10 @@ class AppLocalizations {
       'inProgress': 'Davom etmoqda',
       'completed': 'Tugatilgan',
       'duration': 'Davomiyligi',
+      'attendanceStats': 'Keldi-ketdi statistikasi',
+      'onTime': 'On Time',
+      'late': 'Late',
+      'refresh': 'Refresh',
 
       // Attendance
       'checkInTitle': 'Ish boshlash',
@@ -180,6 +188,11 @@ class AppLocalizations {
       _localizedValues[locale.languageCode]!['inProgress']!;
   String get completed => _localizedValues[locale.languageCode]!['completed']!;
   String get duration => _localizedValues[locale.languageCode]!['duration']!;
+  String get attendanceStats =>
+      _localizedValues[locale.languageCode]!['attendanceStats']!;
+  String get onTime => _localizedValues[locale.languageCode]!['onTime']!;
+  String get late => _localizedValues[locale.languageCode]!['late']!;
+  String get refresh => _localizedValues[locale.languageCode]!['refresh']!;
 
   // Attendance page
   String get checkInTitle =>
