@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
+import 'package:shimmer/shimmer.dart';
 import '../services/user_service.dart';
 import '../models/attendance_model.dart';
 
@@ -294,6 +295,215 @@ class _AttendanceListPageState extends State<AttendanceListPage>
     );
   }
 
+  // Add skeleton placeholder card for loading state
+  Widget _buildSkeletonCard() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      child: Card(
+        elevation: 2,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: Colors.grey.shade300,
+              width: 1,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          width: 36,
+                          height: 36,
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          width: 120,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      width: 80,
+                      height: 28,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildSkeletonTimeInfo(),
+                    Container(
+                      height: 40,
+                      width: 1,
+                      color: Colors.white,
+                    ),
+                    _buildSkeletonTimeInfo(),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      width: 100,
+                      height: 28,
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      width: 80,
+                      height: 28,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Skeleton time info widget
+  Widget _buildSkeletonTimeInfo() {
+    return Expanded(
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 12,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Container(
+                width: 50,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Container(
+            width: 40,
+            height: 11,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Skeleton stat card
+  Widget _buildSkeletonStatCard() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              width: 40,
+              height: 40,
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 60,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  width: 40,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -340,21 +550,25 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                 child: Row(
                   children: [
                     Expanded(
-                      child: _buildStatCard(
-                        AppLocalizations.of(context).totalHours,
-                        '${_attendances.fold<int>(0, (sum, attendance) => sum + (attendance.checkOut?.difference(attendance.checkIn).inHours ?? 0))}h',
-                        Icons.access_time,
-                        Colors.blue,
-                      ),
+                      child: _isLoading
+                          ? _buildSkeletonStatCard()
+                          : _buildStatCard(
+                              AppLocalizations.of(context).totalHours,
+                              '${_attendances.fold<int>(0, (sum, attendance) => sum + (attendance.checkOut?.difference(attendance.checkIn).inHours ?? 0))}h',
+                              Icons.access_time,
+                              Colors.blue,
+                            ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: _buildStatCard(
-                        AppLocalizations.of(context).entries,
-                        _attendances.length.toString(),
-                        Icons.fact_check,
-                        Colors.green,
-                      ),
+                      child: _isLoading
+                          ? _buildSkeletonStatCard()
+                          : _buildStatCard(
+                              AppLocalizations.of(context).entries,
+                              _attendances.length.toString(),
+                              Icons.fact_check,
+                              Colors.green,
+                            ),
                     ),
                   ],
                 ),
@@ -367,32 +581,11 @@ class _AttendanceListPageState extends State<AttendanceListPage>
                   child: RefreshIndicator(
                     onRefresh: _loadAttendanceData,
                     child: _isLoading
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                  width: 50,
-                                  height: 50,
-                                  child: CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      const Color.fromARGB(255, 37, 134, 237),
-                                    ),
-                                    strokeWidth: 3,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  AppLocalizations.of(context)
-                                      .loadingAttendance,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        ? ListView.builder(
+                            itemCount: 5, // Show 5 skeleton cards when loading
+                            itemBuilder: (context, index) {
+                              return _buildSkeletonCard();
+                            },
                           )
                         : _attendances.isEmpty
                             ? Center(
