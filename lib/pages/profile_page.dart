@@ -2,6 +2,7 @@ import 'package:emplbee_mob/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 import 'dart:convert';
 import '../services/auth_service.dart';
 import '../models/user_model.dart';
@@ -29,7 +30,8 @@ class _ProfilePageState extends State<ProfilePage>
   bool isOnline = false;
   final _storage = FlutterSecureStorage();
   final _authService = AuthService();
-  final _userService = UserService(); // Initialize UserService
+  final _userService = UserService();
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -54,6 +56,10 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   Future<void> _loadUserProfile() async {
+    setState(() {
+      _isLoading = true; // Set loading to true when starting to fetch data
+    });
+
     try {
       // Get user data from UserService which prioritizes configdata
       final user = await _userService.getCurrentUser();
@@ -62,6 +68,7 @@ class _ProfilePageState extends State<ProfilePage>
 
       setState(() {
         _user = user;
+        _isLoading = false; // Set loading to false when data is loaded
       });
     } catch (e) {
       print('Error loading user profile: $e');
@@ -73,6 +80,12 @@ class _ProfilePageState extends State<ProfilePage>
             'ProfilePage: Using cached user data - name: ${cachedUser.name}, username: ${cachedUser.username}');
         setState(() {
           _user = cachedUser;
+          _isLoading = false; // Set loading to false when cached data is loaded
+        });
+      } else {
+        setState(() {
+          _isLoading =
+              false; // Set loading to false even if no data is available
         });
       }
     }
@@ -196,6 +209,125 @@ class _ProfilePageState extends State<ProfilePage>
     );
   }
 
+  // Skeleton widgets for loading state
+  Widget _buildSkeletonAvatar() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        width: 100,
+        height: 100,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonText({double width = 150, double height = 16}) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonInfoCard() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: 80,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                width: 60,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonActionTile() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Container(
+                height: 16,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -274,87 +406,101 @@ class _ProfilePageState extends State<ProfilePage>
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       children: [
-                        Stack(
-                          children: [
-                            CircleAvatar(
-                              radius: 50,
-                              backgroundColor: Colors.blue.shade100,
-                              backgroundImage: _user?.photo != null
-                                  ? NetworkImage(_user!.photo!)
-                                  : null,
-                              child: _user?.photo == null
-                                  ? Text(
-                                      (_user?.name ?? _user?.username ?? '')
-                                          .split(' ')
-                                          .map((e) => e.isNotEmpty
-                                              ? e[0].toUpperCase()
-                                              : '')
-                                          .join(),
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 32,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blue.shade700,
+                        _isLoading
+                            ? _buildSkeletonAvatar()
+                            : Stack(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 50,
+                                    backgroundColor: Colors.blue.shade100,
+                                    backgroundImage: _user?.photo != null
+                                        ? NetworkImage(_user!.photo!)
+                                        : null,
+                                    child: _user?.photo == null
+                                        ? Text(
+                                            (_user?.name ??
+                                                    _user?.username ??
+                                                    '')
+                                                .split(' ')
+                                                .map((e) => e.isNotEmpty
+                                                    ? e[0].toUpperCase()
+                                                    : '')
+                                                .join(),
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 32,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.blue.shade700,
+                                            ),
+                                          )
+                                        : null,
+                                  ),
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: GestureDetector(
+                                      onTap: () =>
+                                          _updateAttendanceStatus(!isOnline),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: isOnline
+                                              ? Colors.green
+                                              : Colors.grey,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        width: 20,
+                                        height: 20,
                                       ),
-                                    )
-                                  : null,
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: GestureDetector(
-                                onTap: () => _updateAttendanceStatus(!isOnline),
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        isOnline ? Colors.green : Colors.grey,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 2,
                                     ),
                                   ),
-                                  width: 20,
-                                  height: 20,
-                                ),
+                                ],
                               ),
-                            ),
-                          ],
-                        ),
                         const SizedBox(height: 16),
                         // Display name from configdata, fallback to username if not available
-                        Text(
-                          _user?.name ?? _user?.username ?? 'Loading...',
-                          style: GoogleFonts.poppins(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
+                        _isLoading
+                            ? _buildSkeletonText(width: 200, height: 24)
+                            : Text(
+                                _user?.name ?? _user?.username ?? 'Loading...',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
                         const SizedBox(height: 4),
-                        Text(
-                          _user?.type ?? 'Ishchi',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
+                        _isLoading
+                            ? _buildSkeletonText(width: 120)
+                            : Text(
+                                _user?.type ?? 'Ishchi',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
                         const SizedBox(height: 4),
-                        Text(
-                          _user?.code ?? '',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
+                        _isLoading
+                            ? _buildSkeletonText(width: 100)
+                            : Text(
+                                _user?.code ?? '',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
                         const SizedBox(height: 4),
-                        Text(
-                          _user?.email ?? '',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.grey[500],
-                          ),
-                        ),
+                        _isLoading
+                            ? _buildSkeletonText(width: 180)
+                            : Text(
+                                _user?.email ?? '',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
                       ],
                     ),
                   ),
@@ -369,33 +515,37 @@ class _ProfilePageState extends State<ProfilePage>
                     crossAxisCount: 2,
                     mainAxisSpacing: 16,
                     crossAxisSpacing: 16,
-                    children: [
-                      _buildInfoCard(
-                        title: AppLocalizations.of(context).totalHours,
-                        value: '$totalWorkedHours hrs',
-                        icon: Icons.access_time,
-                        iconColor: Colors.blue,
-                        isHighlighted: true,
-                      ),
-                      _buildInfoCard(
-                        title: AppLocalizations.of(context).monthlyHours,
-                        value: '$workedHours hrs',
-                        icon: Icons.calendar_today,
-                        iconColor: Colors.purple,
-                      ),
-                      _buildInfoCard(
-                        title: AppLocalizations.of(context).availableOffDays,
-                        value: '$availableOffDays days',
-                        icon: Icons.beach_access,
-                        iconColor: Colors.orange,
-                      ),
-                      _buildInfoCard(
-                        title: AppLocalizations.of(context).monthlySalary,
-                        value: '\$${(salary / 1000000).toStringAsFixed(1)}M',
-                        icon: Icons.account_balance_wallet,
-                        iconColor: Colors.green,
-                      ),
-                    ],
+                    children: _isLoading
+                        ? List.generate(4, (_) => _buildSkeletonInfoCard())
+                        : [
+                            _buildInfoCard(
+                              title: AppLocalizations.of(context).totalHours,
+                              value: '$totalWorkedHours hrs',
+                              icon: Icons.access_time,
+                              iconColor: Colors.blue,
+                              isHighlighted: true,
+                            ),
+                            _buildInfoCard(
+                              title: AppLocalizations.of(context).monthlyHours,
+                              value: '$workedHours hrs',
+                              icon: Icons.calendar_today,
+                              iconColor: Colors.purple,
+                            ),
+                            _buildInfoCard(
+                              title:
+                                  AppLocalizations.of(context).availableOffDays,
+                              value: '$availableOffDays days',
+                              icon: Icons.beach_access,
+                              iconColor: Colors.orange,
+                            ),
+                            _buildInfoCard(
+                              title: AppLocalizations.of(context).monthlySalary,
+                              value:
+                                  '\$${(salary / 1000000).toStringAsFixed(1)}M',
+                              icon: Icons.account_balance_wallet,
+                              iconColor: Colors.green,
+                            ),
+                          ],
                   ),
                 ),
 
@@ -426,49 +576,62 @@ class _ProfilePageState extends State<ProfilePage>
                             ),
                           ],
                         ),
-                        child: Column(
-                          children: [
-                            _buildActionTile(
-                              AppLocalizations.of(context).requestTimeOff,
-                              Icons.event_available,
-                              () {
-                                // TODO: Implement time off request
-                              },
-                            ),
-                            const Divider(height: 1),
-                            _buildActionTile(
-                              AppLocalizations.of(context)
-                                  .viewAttendanceHistory,
-                              Icons.history,
-                              () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const AttendanceListPage(),
+                        child: _isLoading
+                            ? Column(
+                                children: List.generate(
+                                  4,
+                                  (index) => Column(
+                                    children: [
+                                      _buildSkeletonActionTile(),
+                                      if (index < 3) const Divider(height: 1),
+                                    ],
+                                  ),
                                 ),
+                              )
+                            : Column(
+                                children: [
+                                  _buildActionTile(
+                                    AppLocalizations.of(context).requestTimeOff,
+                                    Icons.event_available,
+                                    () {
+                                      // TODO: Implement time off request
+                                    },
+                                  ),
+                                  const Divider(height: 1),
+                                  _buildActionTile(
+                                    AppLocalizations.of(context)
+                                        .viewAttendanceHistory,
+                                    Icons.history,
+                                    () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const AttendanceListPage(),
+                                      ),
+                                    ),
+                                  ),
+                                  const Divider(height: 1),
+                                  _buildActionTile(
+                                    AppLocalizations.of(context).myTasks,
+                                    Icons.task_alt,
+                                    () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const TasksPage(),
+                                      ),
+                                    ),
+                                  ),
+                                  const Divider(height: 1),
+                                  _buildActionTile(
+                                    AppLocalizations.of(context)
+                                        .downloadPayslip,
+                                    Icons.description,
+                                    () {
+                                      // TODO: Implement pay slip download
+                                    },
+                                  ),
+                                ],
                               ),
-                            ),
-                            const Divider(height: 1),
-                            _buildActionTile(
-                              AppLocalizations.of(context).myTasks,
-                              Icons.task_alt,
-                              () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const TasksPage(),
-                                ),
-                              ),
-                            ),
-                            const Divider(height: 1),
-                            _buildActionTile(
-                              AppLocalizations.of(context).downloadPayslip,
-                              Icons.description,
-                              () {
-                                // TODO: Implement pay slip download
-                              },
-                            ),
-                          ],
-                        ),
                       ),
                     ],
                   ),
