@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widget/widget_support.dart';
-import 'package:emplbee_mob/pages/home_page.dart';
-import 'package:emplbee_mob/pages/signin_page.dart';
-
+import 'package:Emplbee/pages/home_page.dart';
+import 'package:Emplbee/pages/signin_page.dart';
 
 class SignIn extends StatefulWidget {
   const SignIn({super.key});
@@ -27,7 +26,6 @@ class _SignInState extends State<SignIn> {
                   color: Colors.white,
                 ),
               ),
-              
               Container(
                 margin: EdgeInsets.only(top: 70.0, left: 20.0, right: 20.0),
                 child: Column(
@@ -65,7 +63,8 @@ class _SignInState extends State<SignIn> {
                             TextField(
                               decoration: InputDecoration(
                                 hintText: 'Email',
-                                hintStyle: AppWidget.semiboldTextFieldStylehint(),
+                                hintStyle:
+                                    AppWidget.semiboldTextFieldStylehint(),
                                 prefixIcon: Icon(Icons.email_outlined),
                               ),
                             ),
@@ -76,7 +75,8 @@ class _SignInState extends State<SignIn> {
                               obscureText: true,
                               decoration: InputDecoration(
                                 hintText: 'Password',
-                                hintStyle: AppWidget.semiboldTextFieldStylehint(),
+                                hintStyle:
+                                    AppWidget.semiboldTextFieldStylehint(),
                                 prefixIcon: Icon(Icons.password_outlined),
                               ),
                             ),
@@ -89,7 +89,8 @@ class _SignInState extends State<SignIn> {
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.grey,
-                                padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 100.0),
+                                padding: EdgeInsets.symmetric(
+                                    vertical: 8.0, horizontal: 100.0),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
                                 ),
