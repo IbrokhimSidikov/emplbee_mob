@@ -303,11 +303,10 @@ class _HomePageState extends State<HomePage>
                                 AppLocalizations.of(context).attendanceList,
                                 Icons.checklist_outlined,
                                 '/attendancelistpage'),
-                            _buildCard(
+                            _buildDisabledCard(
                                 context,
                                 AppLocalizations.of(context).attendance,
-                                Icons.done_outline,
-                                null),
+                                Icons.done_outline),
                             _buildCard(
                                 context,
                                 AppLocalizations.of(context).tasks,
@@ -376,6 +375,67 @@ class _HomePageState extends State<HomePage>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDisabledCard(BuildContext context, String label, IconData icon) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(20.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 32,
+                  color: Colors.grey.shade500,
+                ),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.grey.shade400, width: 2),
+                  ),
+                  child: const Icon(
+                    Icons.lock_outline,
+                    size: 16,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
